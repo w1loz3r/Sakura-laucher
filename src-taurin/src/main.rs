@@ -187,7 +187,7 @@ fn safe_extract(mut zip: zip::read::ZipFile<'_>, root: &Path) -> Result<(), Stri
     io::copy(&mut zip,&mut f).map_err(|e|e.to_string())?;
     Ok(())
 }
-fn download_library_list(app: &tauri::AppHandle, http: &reqwest::blocking::Client, libs: &[Value], libraries: &Path, phase: &str, completed: &mut usize, total: usize) -> Result<(), String> {
+fn download_library_list(app: &tauri::AppHandle, _http: &reqwest::blocking::Client, libs: &[Value], libraries: &Path, phase: &str, completed: &mut usize, total: usize) -> Result<(), String> {
     let mut jobs=Vec::new();
     for lib in libs{
         if !allowed(lib){continue;}
@@ -337,7 +337,7 @@ fn safe_join(root:&Path, rel:&str)->Result<PathBuf,String>{
 }
 
 #[tauri::command]
-fn install_modpack(app:tauri::AppHandle,id:String,url:String,filename:String)->Result<Value,String>{
+fn install_modpack(app:tauri::AppHandle,id:String,url:String,_filename:String)->Result<Value,String>{
     let instance=instances_root(&app)?.join(&id);
     if !instance.exists(){return Err("Сборка не найдена".into());}
     let bytes=http_get(&url)?;
@@ -521,7 +521,7 @@ fn install_minecraft(app: tauri::AppHandle,id:String,version:String,loader:Strin
 
     if let Some(ai)=meta.get("assetIndex"){
         let aid=ai.get("id").and_then(Value::as_str).unwrap_or("legacy");
-        let au=asset_index_url.as_deref().ok_or("Нет URL asset index")?;
+        let _au=asset_index_url.as_deref().ok_or("Нет URL asset index")?;
         let idx=cache.join("assets").join("indexes"); fs::create_dir_all(&idx).map_err(|e|e.to_string())?;
         let ip=idx.join(format!("{}.json",aid));
         if !ip.exists() || fs::metadata(&ip).map_err(|e|e.to_string())?.len()==0 {
@@ -660,7 +660,7 @@ fn cache_stats(app:tauri::AppHandle)->Result<Value,String>{
 fn discover_instances()->Result<Value,String>{
     let mut out=Vec::new();
     let mut candidates=Vec::new();
-    if let Ok(appdata)=std::env::var("APPDATA"){candidates.push(PathBuf::from(appdata).join(".minecraft"));candidates.push(PathBuf::from(appdata).join("PrismLauncher/instances"));candidates.push(PathBuf::from(appdata).join("MultiMC/instances"));candidates.push(PathBuf::from(appdata).join(".minecraft/instances"));}
+    if let Ok(appdata)=std::env::var("APPDATA"){candidates.push(PathBuf::from(&appdata).join(".minecraft"));candidates.push(PathBuf::from(&appdata).join("PrismLauncher/instances"));candidates.push(PathBuf::from(&appdata).join("MultiMC/instances"));candidates.push(PathBuf::from(&appdata).join(".minecraft/instances"));}
     if let Ok(home)=std::env::var("USERPROFILE"){candidates.push(PathBuf::from(home).join(".minecraft"));}
     let mut seen=HashSet::new();
     for p in candidates{if !p.exists()||!seen.insert(p.clone()){continue;} if p.file_name().and_then(|x|x.to_str())==Some("instances"){if let Ok(rd)=fs::read_dir(&p){for e in rd.flatten(){if e.path().is_dir(){out.push(json!({"name":e.file_name().to_string_lossy(),"path":e.path().to_string_lossy(),"kind":"instance"}));}}}}else{out.push(json!({"name":"Minecraft .minecraft","path":p.to_string_lossy(),"kind":"minecraft"}));}}
@@ -837,20 +837,74 @@ fn main(){
         .setup(|app| {
             use tauri::menu::{Menu, MenuItem};
             use tauri::tray::{TrayIconBuilder, TrayIconEvent};
-            let show=MenuItem::with_id(app,"show","Открыть Sakura",true,None::<&str>)?;
-            let quit=MenuItem::with_id(app,"quit","Выйти",true,None::<&str>)?;
-            let menu=Menu::with_items(app,&[&show,&quit])?;
-            let icon=tauri::image::Image::from_bytes(include_bytes!("../icons/icon.png"))?;
-            TrayIconBuilder::new().icon(icon).menu(&menu).on_menu_event(|app,event|match event.id.as_ref(){
-                "show"=>{if let Some(w)=app.get_webview_window("main"){let _=w.show();let _=w.set_focus();}},
-                "quit"=>app.exit(0),
-                _=>{}
-            }).on_tray_icon_event(|app,event|{if let TrayIconEvent::DoubleClick{..}=event{if let Some(w)=app.get_webview_window("main"){let _=w.show();let _=w.set_focus();}}}).build(app)?;
+
+            let show = MenuItem::with_id(app, "show", "Открыть Sakura", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "Выйти", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show, &quit])?;
+
+            let icon = tauri::include_image!("../icons/icon.png");
+
+            TrayIconBuilder::new()
+                .icon(icon)
+                .menu(&menu)
+                .on_menu_event(|app, event| {
+                    match event.id.as_ref() {
+                        "show" => {
+                            if let Some(w) = app.get_webview_window("main") {
+                                let _ = w.show();
+                                let _ = w.set_focus();
+                            }
+                        }
+                        "quit" => app.exit(0),
+                        _ => {}
+                    }
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::DoubleClick { .. } = event {
+                        let app = tray.app_handle();
+                        if let Some(w) = app.get_webview_window("main") {
+                            let _ = w.show();
+                            let _ = w.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+
             Ok(())
         })
-        .on_window_event(|window,event|{
-            if let WindowEvent::CloseRequested{api,..}=event{api.prevent_close();let _=window.hide();}
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.hide();
+            }
         })
-        .invoke_handler(tauri::generate_handler![launcher_info,create_instance,list_instance_files,open_instance,install_content,remove_content,install_mod,install_modpack,install_minecraft,find_java,install_java,duplicate_instance,rename_instance,export_instance,repair_instance,delete_instance,backup_instance,restore_backup,cache_stats,discover_instances,import_instance,import_folder_instance,open_url,check_launcher_update,launch_instance,rpc_update])
-        .run(tauri::generate_context!()).expect("error while running Sakura Launcher");
+        .invoke_handler(tauri::generate_handler![
+            launcher_info,
+            create_instance,
+            list_instance_files,
+            open_instance,
+            install_content,
+            install_mod,
+            install_modpack,
+            install_minecraft,
+            find_java,
+            install_java,
+            duplicate_instance,
+            rename_instance,
+            export_instance,
+            repair_instance,
+            delete_instance,
+            backup_instance,
+            restore_backup,
+            cache_stats,
+            discover_instances,
+            import_instance,
+            import_folder_instance,
+            open_url,
+            check_launcher_update,
+            launch_instance,
+            rpc_update
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running Sakura Launcher");
 }
