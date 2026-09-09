@@ -677,35 +677,6 @@ function App(){
    />)}
   </div>
   <div className="shell">
-   <aside className="sidebar">
-    <button className="brand" onClick={()=>setTab('home')}>
-     <img src={logo} alt="Sakura"/>
-     <div className="brandCopy">
-      <strong>Sakura</strong>
-      <span>Premium Minecraft launcher</span>
-     </div>
-    </button>
-    <button className="profileCard" onClick={()=>setModal('profile')}>
-     <span className="profileAvatar">{profile.name.slice(0,2).toUpperCase()}</span>
-     <div>
-      <strong>{profile.name}</strong>
-      <span>{normalizedAccounts.length} профиля · {settings.scene==='auto'?'авто-сцена':'ручная сцена'}</span>
-     </div>
-    </button>
-    <nav className="sidebarNav" aria-label="Навигация">
-     {navItems.map(([id,icon,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}><em>{icon}</em><span>{label}</span></button>)}
-    </nav>
-    <section className="sidebarSection">
-     <p>Быстрые действия</p>
-     <button className="sidebarAction accent" onClick={()=>setModal({type:'create'})}>＋ Новая сборка</button>
-     <button className="sidebarAction" onClick={()=>setModal('settings')}>⚙ Настройки</button>
-     <button className="sidebarAction" onClick={()=>setLogOpen(true)}>⌁ Логи Minecraft</button>
-    </section>
-    <div className="sidebarFooter">
-     <span>v0.12.0</span>
-     <small>{builds.length} сборок · {installedCount} готовы к запуску</small>
-    </div>
-   </aside>
    <main className="content">
     <header className="topbar">
      <div>
@@ -714,8 +685,10 @@ function App(){
      </div>
      <div className="topbarActions">
       {featuredBuild&&<button className="chipButton" onClick={()=>setSelected(featuredBuild)}>{featuredBuild.name}</button>}
-      <button className="iconButton" title="Профили" onClick={()=>setModal('profile')}>☻</button>
-      <button className="iconButton" title="Настройки" onClick={()=>setModal('settings')}>⚙</button>
+      <button className="chipButton profileChip" title="Профили" onClick={()=>setModal('profile')}>
+       <span className="profileAvatar small">{profile.name.slice(0,2).toUpperCase()}</span>
+       <strong>{profile.name}</strong>
+      </button>
      </div>
     </header>
     {tab==='home'&&<Home
@@ -765,6 +738,12 @@ function App(){
      openBuilds={()=>setTab('builds')}
     />}
    </main>
+   <nav className="bottomDock" aria-label="Навигация">
+    {navItems.map(([id,icon,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)} title={label}><span>{icon}</span><b>{label}</b></button>)}
+    <i className="dockDivider"/>
+    <button className={logOpen?'active':''} title="Логи Minecraft" onClick={()=>setLogOpen(true)}><span>⌁</span><b>Логи Minecraft</b></button>
+    <button className={modal==='settings'?'active':''} title="Настройки" onClick={()=>setModal('settings')}><span>⚙</span><b>Настройки</b></button>
+   </nav>
   </div>
   {selected&&<BuildPanel
    build={selected}
