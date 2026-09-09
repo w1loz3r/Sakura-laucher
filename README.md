@@ -1,39 +1,221 @@
-# Sakura Launcher 0.4.0
+# 🌸 Sakura Launcher
 
-Sakura Launcher — desktop Minecraft Java launcher built with Tauri 2 + React + Rust.
+> Современный Minecraft Java Launcher на **Tauri 2 + React + Rust** с собственной системой сборок, интеграцией Mojang и Modrinth и интерфейсом в стиле Sakura.
 
-## What works
+![Sakura Launcher](https://img.shields.io/badge/Sakura%20Launcher-0.9.0-ff7aa8?style=for-the-badge)
+![Tauri](https://img.shields.io/badge/Tauri-2-24c8db?style=flat-square&logo=tauri)
+![React](https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react)
+![Rust](https://img.shields.io/badge/Rust-backend-000000?style=flat-square&logo=rust)
 
-- Real Mojang Java Edition version manifest.
-- Persistent local profiles and real user-created instances.
-- Per-instance folders for mods, saves, resourcepacks and shaderpacks.
-- Real Vanilla installation: client jar, libraries, Windows natives and assets.
-- Fabric installation using Fabric Meta and its launcher profile/libraries.
-- Modrinth project search and `.jar` installation into the selected instance.
-- Instance drawer with installed mods, sizes and instance path.
-- Open instance folder in Explorer.
-- Skin Studio with 64×64 PNG import, pixel editing and PNG export.
-- Sakura/Midnight/Rose themes, accent color, glow and animation settings.
-- Full-screen particle editor with count, speed, opacity and size controls.
-- Custom Tauri titlebar with minimize, maximize/restore and close.
+Sakura Launcher — самостоятельный лаунчер для **Minecraft: Java Edition**. Он создавался не как копия существующих лаунчеров, а как отдельное приложение с собственной архитектурой, интерфейсом и системой экземпляров Minecraft.
 
-## Important authentication note
+## ✨ Возможности
 
-The local profile is intended for local/offline play. It does not bypass Minecraft ownership or Microsoft authentication and is not an authenticated online account. Microsoft/Xbox authentication should be added with a properly registered application before distributing an online-login build.
+### 🎮 Minecraft
 
-## Build on Windows
+- получение официального списка версий Minecraft Java Edition через Mojang;
+- создание отдельных сборок/инстансов;
+- установка Vanilla Minecraft;
+- установка Fabric через Fabric Meta;
+- загрузка client JAR, библиотек, natives и assets;
+- отдельная папка игры для каждой сборки;
+- запуск Minecraft через Java;
+- настройка RAM, разрешения окна, fullscreen и JVM-аргументов;
+- автоматический поиск Java;
+- установка **Java 21** из настроек;
+- просмотр логов Minecraft в реальном времени;
+- отображение кода завершения и статуса краша.
+
+### 📦 Сборки
+
+Каждая сборка существует отдельно и хранит собственные файлы, моды и настройки.
+
+Доступны действия:
+
+- создать сборку;
+- установить или переустановить Minecraft;
+- запустить сборку;
+- открыть папку сборки;
+- переименовать;
+- сделать дубликат;
+- экспортировать сборку в ZIP;
+- импортировать сборку из ZIP;
+- восстановить установку через Repair;
+- обновить отслеживаемые моды;
+- настроить параметры запуска;
+- удалить сборку из лаунчера.
+
+### 🧩 Modrinth
+
+В Sakura Launcher встроен поиск контента Modrinth:
+
+- **Моды**;
+- **Ресурспаки**;
+- **Шейдеры**;
+- **Готовые сборки / Modpacks**.
+
+Моды устанавливаются непосредственно в выбранную сборку, а не глобально.
+
+Для Modrinth-сборок поддерживается импорт `.mrpack` с обработкой:
+
+- `modrinth.index.json`;
+- зависимостей;
+- версии Minecraft;
+- Fabric / Forge / NeoForge / Quilt metadata;
+- `overrides`;
+- `client-overrides`.
+
+> Поддержка loader'ов в интерфейсе не означает, что для каждого loader уже существует полноценный самостоятельный installer. Реальные install-flow сейчас реализованы не одинаково для всех loader'ов.
+
+### 🖥️ Java
+
+Sakura умеет:
+
+- найти Java автоматически;
+- принять путь к `java.exe` / `javaw.exe` или JDK-папке;
+- использовать `JAVA_HOME` и доступную Java из PATH;
+- установить Java 21 в собственный runtime лаунчера.
+
+Для современных версий Minecraft требуется соответствующая версия Java. Sakura не подменяет требования самой игры.
+
+### 👤 Профили
+
+На первом запуске создаётся локальный профиль с ником.
+
+Можно хранить несколько локальных профилей и переключаться между ними.
+
+**Важно:** локальный профиль не является Microsoft-аккаунтом и не подтверждает владение Minecraft. Microsoft/Xbox OAuth для полноценной авторизованной онлайн-игры пока не реализован.
+
+### 🎨 Интерфейс
+
+- Sakura / Midnight / Rose темы;
+- пользовательский accent color;
+- свечение интерфейса;
+- плавные анимации;
+- собственный titlebar для borderless окна;
+- полноэкранные частицы сакуры;
+- редактор частиц с настройкой количества, скорости, прозрачности и размера;
+- отдельная Skin Studio с редактированием 64×64 скина и экспортом PNG.
+
+## 🏗️ Архитектура
+
+```text
+Sakura Launcher
+├── React UI
+│   ├── Главный экран
+│   ├── Сборки
+│   ├── Modrinth
+│   ├── Skin Studio
+│   └── Настройки
+│
+└── Tauri 2 / Rust
+    ├── Minecraft metadata
+    ├── Download pipeline
+    ├── Instance manager
+    ├── Mod / Modpack installer
+    ├── Java manager
+    ├── ZIP import / export
+    └── Minecraft process launcher
+```
+
+Данные сборок хранятся в app data Sakura Launcher, а игровые файлы каждой сборки изолированы в собственном instance directory.
+
+## 🚀 Запуск проекта
+
+### Требования
+
+- Windows;
+- Node.js 20+;
+- Rust / Cargo для полноценной сборки Tauri;
+- интернет-соединение для загрузки Minecraft, Java и контента Modrinth.
+
+### Установка зависимостей
 
 ```powershell
 npm install
+```
+
+### Запуск dev-версии
+
+```powershell
+npm run tauri dev
+```
+
+### Сборка production
+
+```powershell
 npm run tauri build
 ```
 
-The NSIS installer is produced under `src-taurin/target/release/bundle/nsis/`.
+NSIS installer после успешной сборки находится в:
 
-## Java
+```text
+src-taurin/target/release/bundle/nsis/
+```
 
-Sakura Launcher uses an existing `javaw.exe`/`java.exe` when launching. The Settings page includes Java path detection. For modern Minecraft versions, use a compatible Java runtime (for example Java 21 where required by the selected game version).
+## 📁 Структура проекта
 
-## Loader scope
+```text
+.
+├── src/
+│   ├── main.jsx
+│   └── styles.css
+├── src-taurin/
+│   ├── src/
+│   │   └── main.rs
+│   ├── Cargo.toml
+│   ├── build.rs
+│   └── tauri.conf.json
+├── index.html
+├── package.json
+└── README.md
+```
 
-Vanilla and Fabric are implemented as real installation paths in this release. Forge/NeoForge/Quilt are intentionally not presented as installable build types until their official installer/metadata flows are implemented; the launcher does not create fake loader installations.
+> Папка backend намеренно называется `src-taurin` и является частью текущей структуры проекта.
+
+## ⚠️ Текущий статус
+
+**v0.8.0 — функциональный development build.**
+
+Основные реальные части Minecraft pipeline и управления сборками уже подключены, но проект ещё не следует считать полностью готовым релизом.
+
+Из известных ограничений:
+
+- Microsoft OAuth ещё не реализован;
+- online-mode авторизация не подключена;
+- Repair пока восстанавливает основную Minecraft-установку, а не выполняет полную проверку хэшей всех файлов;
+- автоматическое обновление модов отслеживает моды, установленные через новую систему metadata;
+- старые версии модов при обновлении требуют дополнительной проверки удаления предыдущего JAR;
+- Java 21 installer в текущем виде ориентирован на Windows x64;
+- полноценные install-flow Forge / NeoForge / Quilt ещё требуют отдельной реализации;
+- production-сборку Rust/Tauri необходимо проверять непосредственно в Windows toolchain.
+
+Sakura Launcher не использует фиктивные Minecraft-установки для имитации готового функционала: если конкретная часть ещё не реализована, она не должна выдаваться за готовую.
+
+## 🗺️ План развития
+
+### Следующий большой этап
+
+- Microsoft OAuth + безопасное хранение токенов;
+- полноценная авторизованная онлайн-игра;
+- более строгая проверка SHA-1 для загружаемых файлов;
+- полноценный Repair/Integrity Check;
+- корректное обновление и удаление старых версий модов;
+- полноценные installers для Forge / NeoForge / Quilt;
+- native file dialogs вместо временных prompt-сценариев;
+- более глубокая настройка и управление профилями;
+- стабильный production updater.
+
+## 🔒 Безопасность
+
+- пути внутри ZIP проверяются перед распаковкой;
+- имя устанавливаемого mod-файла нормализуется до безопасного имени файла;
+- Minecraft и его официальные metadata берутся из официальных Mojang endpoints;
+- Modrinth-контент загружается через Modrinth API;
+- локальный профиль не используется как подмена Microsoft authentication.
+
+## 📜 Лицензия
+
+Лицензия проекта пока не определена.
+
+Sakura Launcher — сторонний launcher и не является официальным продуктом Mojang Studios или Microsoft.
