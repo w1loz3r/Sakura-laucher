@@ -1,0 +1,64 @@
+name: Build Launcher
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Check Tauri icon
+        shell: pwsh
+        run: |
+          Write-Host "Checking Tauri project..."
+          if (!(Test-Path "src-taurin/tauri.conf.json")) {
+            throw "src-taurin/tauri.conf.json not found"
+          }
+
+          if (!(Test-Path "src-taurin/icons/icon.ico")) {
+            throw "src-taurin/icons/icon.ico not found"
+          }
+
+          Write-Host "Tauri config found."
+          Write-Host "Icon found:"
+          Get-Item "src-taurin/icons/icon.ico"
+
+      - name: Build launcher
+        run: npm run tauri build
+
+      - name: Show build output
+        shell: pwsh
+        run: |
+          Write-Host "=== Bundle directory ==="
+          Get-ChildItem -Path "src-taurin/target/release/bundle" -Recurse -File |
+            Select-Object FullName, Length
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sakura-Launcher-Windows
+          path: src-taurin/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
