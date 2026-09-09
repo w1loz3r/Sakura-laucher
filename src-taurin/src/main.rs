@@ -3,7 +3,7 @@
 use serde_json::{json, Value};
 use sha1::{Digest, Sha1};
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
-use std::{collections::HashMap, fs, io::{self, Cursor, Read, Write}, path::{Path, PathBuf}, process::{Command, Stdio}, sync::{Arc, Mutex, OnceLock, atomic::{AtomicUsize, Ordering}}, thread};
+use std::{collections::HashMap, fs, io::{self, Cursor, Read, Write}, path::{Path, PathBuf}, process::{Command, Stdio}, sync::{Arc, Mutex, atomic::{AtomicUsize, Ordering}}, thread};
 use tauri::{Emitter, Manager};
 
 const MANIFEST_URL: &str = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
@@ -487,7 +487,7 @@ fn install_java(app: tauri::AppHandle) -> Result<String,String> {
     emit_progress(&app,"Java","Скачиваю Java 21…",0,1);
     let archive=dir.join("java21.zip"); fs::create_dir_all(&dir).map_err(|e|e.to_string())?; fs::write(&archive,bytes).map_err(|e|e.to_string())?;
     let data=fs::read(&archive).map_err(|e|e.to_string())?; let mut z=zip::ZipArchive::new(Cursor::new(data)).map_err(|e|e.to_string())?;
-    for i in 0..z.len(){let mut f=z.by_index(i).map_err(|e|e.to_string())?;let name=f.name().replace('\\','/');if name.starts_with('/')||name.contains("../"){return Err("Некорректный путь в Java archive".into());}let out=dir.join(&name);if f.is_dir(){fs::create_dir_all(&out).map_err(|e|e.to_string())?;}else{if let Some(pa)=out.parent(){fs::create_dir_all(pa).map_err(|e|e.to_string())?;}let mut w=fs::File::create(&out).map_err(|e|e.to_string())?;io::copy(&mut f,&mut w).map_err(|e|e.to_string())?;}}
+    for i in 0..z.len(){let mut f=z.by_index(i).map_err(|e|e.to_string())?;let name=f.name().replace('\\', "/");if name.starts_with('/')||name.contains("../"){return Err("Некорректный путь в Java archive".into());}let out=dir.join(&name);if f.is_dir(){fs::create_dir_all(&out).map_err(|e|e.to_string())?;}else{if let Some(pa)=out.parent(){fs::create_dir_all(pa).map_err(|e|e.to_string())?;}let mut w=fs::File::create(&out).map_err(|e|e.to_string())?;io::copy(&mut f,&mut w).map_err(|e|e.to_string())?;}}
     fs::remove_file(&archive).ok(); let found=find_java_under(&dir).ok_or("Java скачана, но executable не найден")?; emit_progress(&app,"Java","Java 21 готова",1,1); Ok(found)
 }
 fn find_java_under(root:&Path)->Option<String>{let mut stack=vec![root.to_path_buf()];while let Some(d)=stack.pop(){if let Ok(rd)=fs::read_dir(d){for e in rd.flatten(){let p=e.path();if p.is_dir(){stack.push(p)}else if p.file_name().and_then(|x|x.to_str()).map(|x|x.eq_ignore_ascii_case("javaw.exe")||x.eq_ignore_ascii_case("java.exe")).unwrap_or(false)&&java_is_usable(&p){return Some(p.to_string_lossy().into_owned())}}}}None}
@@ -497,7 +497,7 @@ fn copy_dir(src:&Path,dst:&Path)->Result<(),String>{fs::create_dir_all(dst).map_
 #[tauri::command]
 fn rename_instance(app:tauri::AppHandle,id:String,new_id:String)->Result<String,String>{let src=instances_root(&app)?.join(&id);let clean=slug(&new_id);let dst=instances_root(&app)?.join(&clean);if !src.exists(){return Err("Сборка не найдена".into())}if dst.exists(){return Err("Такая сборка уже существует".into())}fs::rename(src,dst).map_err(|e|e.to_string())?;Ok(clean)}
 #[tauri::command]
-fn export_instance(app:tauri::AppHandle,id:String,path:String)->Result<(),String>{let src=instances_root(&app)?.join(&id);if !src.exists(){return Err("Сборка не найдена".into())}let file=fs::File::create(path).map_err(|e|e.to_string())?;let mut z=zip::ZipWriter::new(file);let opts=zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);fn add(z:&mut zip::ZipWriter<fs::File>,base:&Path,p:&Path,opts:zip::write::SimpleFileOptions)->Result<(),String>{for e in fs::read_dir(p).map_err(|e|e.to_string())?{let e=e.map_err(|e|e.to_string())?;let q=e.path();let rel=q.strip_prefix(base).map_err(|e|e.to_string())?.to_string_lossy().replace('\\','/');if q.is_dir(){z.add_directory(format!("{}/",rel),opts).map_err(|e|e.to_string())?;add(z,base,&q,opts)?}else{z.start_file(rel,opts).map_err(|e|e.to_string())?;z.write_all(&fs::read(q).map_err(|e|e.to_string())?).map_err(|e|e.to_string())?}}Ok(())}add(&mut z,&src,&src,opts)?;z.finish().map_err(|e|e.to_string())?;Ok(())}
+fn export_instance(app:tauri::AppHandle,id:String,path:String)->Result<(),String>{let src=instances_root(&app)?.join(&id);if !src.exists(){return Err("Сборка не найдена".into())}let file=fs::File::create(path).map_err(|e|e.to_string())?;let mut z=zip::ZipWriter::new(file);let opts=zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);fn add(z:&mut zip::ZipWriter<fs::File>,base:&Path,p:&Path,opts:zip::write::SimpleFileOptions)->Result<(),String>{for e in fs::read_dir(p).map_err(|e|e.to_string())?{let e=e.map_err(|e|e.to_string())?;let q=e.path();let rel=q.strip_prefix(base).map_err(|e|e.to_string())?.to_string_lossy().replace('\\', "/");if q.is_dir(){z.add_directory(format!("{}/",rel),opts).map_err(|e|e.to_string())?;add(z,base,&q,opts)?}else{z.start_file(rel,opts).map_err(|e|e.to_string())?;z.write_all(&fs::read(q).map_err(|e|e.to_string())?).map_err(|e|e.to_string())?}}Ok(())}add(&mut z,&src,&src,opts)?;z.finish().map_err(|e|e.to_string())?;Ok(())}
 #[tauri::command]
 fn repair_instance(app:tauri::AppHandle,id:String,version:String,loader:String)->Result<Value,String>{let vdir=instances_root(&app)?.join(&id).join("game").join("versions").join(&version);if vdir.exists(){for e in fs::read_dir(vdir).map_err(|e|e.to_string())?.flatten(){let n=e.file_name().to_string_lossy().to_string();if n.ends_with(".jar"){let _=fs::remove_file(e.path());}}}install_minecraft(app,id,version,loader)}
 fn launch_java_path(path: Option<&str>) -> Option<String> {
@@ -544,7 +544,7 @@ fn launch_instance(app:tauri::AppHandle,id:String,version:String,username:String
     vars.insert("library_directory".into(),game.join("libraries").to_string_lossy().into());
     vars.insert("classpath_separator".into(),";".into());
     vars.insert("launcher_name".into(),"SakuraLauncher".into());
-    vars.insert("launcher_version".into(),"0.10.1".into());
+    vars.insert("launcher_version".into(),"0.10.0".into());
     let mut cp=Vec::new();
     if let Some(arr)=meta.get("libraries").and_then(Value::as_array){ for lib in arr { if !allowed(lib){continue;} if let Some(p)=artifact_path(lib,&game.join("libraries")){if p.exists(){cp.push(p.to_string_lossy().to_string());}} } }
     let mut main_class=meta.get("mainClass").and_then(Value::as_str).unwrap_or("").to_string();
@@ -563,63 +563,27 @@ fn launch_instance(app:tauri::AppHandle,id:String,version:String,username:String
     if main_class.is_empty(){return Err("mainClass отсутствует в Minecraft metadata".into());}
     let opts=options.unwrap_or_default(); let min_ram=opts.min_ram.unwrap_or(1024).clamp(512,32768); let max_ram=opts.max_ram.unwrap_or(4096).max(min_ram).clamp(512,32768); jvm_args.insert(0,format!("-Xms{}M",min_ram)); jvm_args.insert(1,format!("-Xmx{}M",max_ram)); if let Some(extra)=opts.jvm_args{jvm_args.extend(extra.split_whitespace().map(str::to_string));} if let (Some(w),Some(h))=(opts.width,opts.height){game_args.extend(["--width".into(),w.clamp(640,7680).to_string(),"--height".into(),h.clamp(480,4320).to_string()]);} if opts.fullscreen.unwrap_or(false){game_args.push("--fullscreen".into());} let mut args=Vec::new(); args.extend(jvm_args); args.push("-Djava.library.path=${natives_directory}".replace("${natives_directory}",&vars["natives_directory"])); args.push("-cp".into()); args.push(cp.join(";")); args.push(main_class); args.extend(game_args);
     let _ = app.emit("minecraft-log", json!({"line":format!("[Sakura] Запуск Minecraft {} / {}",version,loader),"stream":"launcher"}));
-    let _ = app.emit("minecraft-log", json!({"line":format!("[Sakura] Java: {}",java_executable),"stream":"launcher"}));
-    let java_executable = if cfg!(windows) {
-        let candidate = Path::new(&java);
-        if candidate.file_name().and_then(|x| x.to_str()).map(|x| x.eq_ignore_ascii_case("java.exe")).unwrap_or(false) {
-            candidate.parent().map(|p| p.join("javaw.exe")).filter(|p| p.exists()).map(|p| p.to_string_lossy().into_owned()).unwrap_or(java.clone())
-        } else {
-            java.clone()
-        }
-    } else {
-        java.clone()
-    };
-
-    let mut command = Command::new(&java_executable);
-    command.args(args).current_dir(&game).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        command.creation_flags(0x08000000);
-    }
-    let mut child=command.spawn().map_err(|e|format!("Не удалось запустить Minecraft через Java: {e}"))?; let out=child.stdout.take(); let err=child.stderr.take(); let a=app.clone(); thread::spawn(move||{use std::io::BufRead;if let Some(o)=out{for l in io::BufReader::new(o).lines().flatten(){let _=a.emit("minecraft-log",json!({"line":l,"stream":"stdout"}));}}}); let a=app.clone(); thread::spawn(move||{use std::io::BufRead;if let Some(o)=err{for l in io::BufReader::new(o).lines().flatten(){let _=a.emit("minecraft-log",json!({"line":l,"stream":"stderr"}));}}}); let a=app.clone(); thread::spawn(move||{let code=child.wait().ok().and_then(|s|s.code()).unwrap_or(-1);let _=a.emit("minecraft-exit",json!({"code":code,"crashed":code!=0}));}); Ok(())
+    let _ = app.emit("minecraft-log", json!({"line":format!("[Sakura] Java: {}",java),"stream":"launcher"}));
+    let mut child=Command::new(java).args(args).current_dir(&game).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().map_err(|e|format!("Не удалось запустить Minecraft через Java: {e}"))?; let out=child.stdout.take(); let err=child.stderr.take(); let a=app.clone(); thread::spawn(move||{use std::io::BufRead;if let Some(o)=out{for l in io::BufReader::new(o).lines().flatten(){let _=a.emit("minecraft-log",json!({"line":l,"stream":"stdout"}));}}}); let a=app.clone(); thread::spawn(move||{use std::io::BufRead;if let Some(o)=err{for l in io::BufReader::new(o).lines().flatten(){let _=a.emit("minecraft-log",json!({"line":l,"stream":"stderr"}));}}}); let a=app.clone(); thread::spawn(move||{let code=child.wait().ok().and_then(|s|s.code()).unwrap_or(-1);let _=a.emit("minecraft-exit",json!({"code":code,"crashed":code!=0}));}); Ok(())
 }
-
-static DISCORD_RPC: OnceLock<Mutex<Option<DiscordIpcClient>>> = OnceLock::new();
 
 #[tauri::command]
 fn rpc_update(client_id:String, details:String, state:String, clear:bool)->Result<(),String>{
     let id=client_id.trim();
     if id.is_empty(){return Ok(());}
-
-    let storage=DISCORD_RPC.get_or_init(||Mutex::new(None));
-    let mut guard=storage.lock().map_err(|_|"Discord RPC lock poisoned".to_string())?;
-
-    if clear {
-        if let Some(client)=guard.as_mut(){
-            let _=client.clear_activity();
-        }
-        *guard=None;
-        return Ok(());
+    let mut client=DiscordIpcClient::new(id);
+    client.connect().map_err(|e|format!("Discord RPC: {e}"))?;
+    if clear { client.clear_activity().map_err(|e|format!("Discord RPC: {e}"))?; }
+    else {
+        client.set_activity(
+            activity::Activity::new()
+                .name("Sakura Launcher")
+                .details(details.chars().take(128).collect::<String>())
+                .state(state.chars().take(128).collect::<String>())
+                .assets(activity::Assets::new().large_image("sakura" ).large_text("Sakura Launcher"))
+        ).map_err(|e|format!("Discord RPC: {e}"))?;
     }
-
-    let reconnect_needed=guard.as_ref().map(|client|client.client_id != id).unwrap_or(true);
-    if reconnect_needed {
-        *guard=None;
-        let mut client=DiscordIpcClient::new(id);
-        client.connect().map_err(|e|format!("Discord RPC: {e}"))?;
-        *guard=Some(client);
-    }
-
-    let client=guard.as_mut().ok_or("Discord RPC не подключён")?;
-    client.set_activity(
-        activity::Activity::new()
-            .name("Sakura Launcher")
-            .details(details.chars().take(128).collect::<String>())
-            .state(state.chars().take(128).collect::<String>())
-            .assets(activity::Assets::new().large_image("sakura").large_text("Sakura Launcher"))
-    ).map_err(|e|format!("Discord RPC: {e}"))?;
-
+    let _=client.close();
     Ok(())
 }
 
