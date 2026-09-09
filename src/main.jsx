@@ -14,6 +14,7 @@ const saveBuilds=(builds)=>localStorage.setItem('sakura.builds',JSON.stringify(b
 const defaultSettings={
  accent:'#f4a0bd',
  theme:'sakura',
+ scene:'auto',
  particles:true,
  particleCount:28,
  particleSpeed:1,
@@ -42,7 +43,28 @@ const navItems=[
  ['versions','◈','Версии'],
  ['mods','✦','Контент']
 ];
-const themeOptions=[['sakura','Sakura'],['midnight','Midnight'],['rose','Rose']];
+const themeOptions=[
+ ['sakura','Sakura','Розовый премиум-стиль с мягким свечением'],
+ ['midnight','Midnight','Холодный тёмный UI с ночными акцентами'],
+ ['rose','Rose','Тёплый садовый стиль с романтичной палитрой'],
+ ['aurora','Aurora','Неоново-синий стиль с северным свечением'],
+ ['ember','Ember','Яркий закатный стиль с тёплыми оттенками']
+];
+const sceneOptions=[
+ ['auto','Авто'],
+ ['sakura-dusk','Sakura Dusk'],
+ ['neon-city','Neon City'],
+ ['blossom-garden','Blossom Garden'],
+ ['aurora-peaks','Aurora Peaks'],
+ ['ember-valley','Ember Valley']
+];
+const themeSceneMap={
+ sakura:'sakura-dusk',
+ midnight:'neon-city',
+ rose:'blossom-garden',
+ aurora:'aurora-peaks',
+ ember:'ember-valley'
+};
 const modTypeLabels={
  mod:'Моды',
  resourcepack:'Ресурспаки',
@@ -50,10 +72,14 @@ const modTypeLabels={
  modpack:'Готовые сборки'
 };
 const visualPresets=[
- {id:'blossom',label:'Blossom',hint:'Мягкий розовый glow и уютная атмосфера.',values:{theme:'sakura',accent:'#f4a0bd',particles:true,particleCount:28,particleOpacity:.24,glow:true,animations:true}},
- {id:'midnight',label:'Midnight',hint:'Холодный тёмный стиль с более спокойным свечением.',values:{theme:'midnight',accent:'#7fb6ff',particles:true,particleCount:20,particleOpacity:.16,glow:true,animations:true}},
- {id:'ember',label:'Ember',hint:'Тёплый акцент для более контрастного игрового вида.',values:{theme:'rose',accent:'#ffb074',particles:false,particleCount:12,particleOpacity:.12,glow:true,animations:true}}
+ {id:'blossom',label:'Blossom',hint:'Мягкий розовый glow и уютная атмосфера.',values:{theme:'sakura',scene:'sakura-dusk',accent:'#f4a0bd',particles:true,particleCount:28,particleOpacity:.24,glow:true,animations:true,density:'cozy'}},
+ {id:'midnight',label:'Midnight',hint:'Холодный тёмный стиль с более спокойным свечением.',values:{theme:'midnight',scene:'neon-city',accent:'#7fb6ff',particles:true,particleCount:20,particleOpacity:.16,glow:true,animations:true,density:'compact'}},
+ {id:'garden',label:'Garden',hint:'Больше тепла, лепестков и мягких карточек.',values:{theme:'rose',scene:'blossom-garden',accent:'#ff9fc7',particles:true,particleCount:34,particleOpacity:.28,glow:true,animations:true,density:'cozy'}},
+ {id:'aurora',label:'Aurora',hint:'Северное сияние и яркие сине-зелёные акценты.',values:{theme:'aurora',scene:'aurora-peaks',accent:'#69e6d1',particles:true,particleCount:18,particleOpacity:.18,glow:true,animations:true,density:'spacious'}},
+ {id:'ember',label:'Ember',hint:'Тёплый акцент для более контрастного игрового вида.',values:{theme:'ember',scene:'ember-valley',accent:'#ffb074',particles:false,particleCount:12,particleOpacity:.12,glow:true,animations:true,density:'cozy'}}
 ];
+
+const normalizeAccount=(account)=>typeof account==='string'?{id:account,name:account,type:'local'}:{id:account.id||account.name,name:account.name,type:account.type||'local'};
 
 class LauncherErrorBoundary extends React.Component{
  constructor(props){
@@ -157,6 +183,8 @@ function App(){
 
  const favoriteBuild=builds.find((build)=>build.id===settings.favoriteBuildId)||null;
  const featuredBuild=selected||favoriteBuild||builds[0]||null;
+ const currentScene=settings.scene==='auto'?(themeSceneMap[settings.theme]||'sakura-dusk'):(settings.scene||'sakura-dusk');
+ const normalizedAccounts=useMemo(()=>accounts.filter(Boolean).map(normalizeAccount),[accounts]);
  const totalMods=useMemo(()=>builds.reduce((sum,build)=>sum+(build.mods?.length||0),0),[builds]);
  const installedCount=useMemo(()=>builds.filter((build)=>build.installed).length,[builds]);
  const petals=useMemo(()=>Array.from({length:settings.particles?settings.particleCount:0},(_,index)=>({
@@ -296,6 +324,16 @@ function App(){
  }
  function toggleFavoriteBuild(buildId){
   setSettings((current)=>({...current,favoriteBuildId:current.favoriteBuildId===buildId?'':buildId}));
+ }
+ function removeAccount(name){
+  setAccounts((current)=>{
+   const nextAccounts=current.map(normalizeAccount).filter((account)=>account.name!==name);
+   if(profile?.name===name){
+    if(nextAccounts.length)setProfile({name:nextAccounts[0].name});
+    else setProfile(null);
+   }
+   return nextAccounts;
+  });
  }
 
  async function installJava(){
@@ -616,7 +654,7 @@ function App(){
   setStatus('Сборка удалена.');
  }
 
- if(!profile)return <Onboarding onDone={setProfile}/>;
+ if(!profile)return <Onboarding onDone={setProfile} settings={settings} setSettings={setSettings}/>;
 
  return <div
   className={`app theme-${settings.theme} density-${settings.density} ${settings.glow?'glow-on':''} ${settings.animations?'animations-on':'animations-off'}`}
@@ -651,7 +689,7 @@ function App(){
      <span className="profileAvatar">{profile.name.slice(0,2).toUpperCase()}</span>
      <div>
       <strong>{profile.name}</strong>
-      <span>Локальный профиль</span>
+      <span>{normalizedAccounts.length} профиля · {settings.scene==='auto'?'авто-сцена':'ручная сцена'}</span>
      </div>
     </button>
     <nav className="sidebarNav" aria-label="Навигация">
@@ -684,6 +722,7 @@ function App(){
      builds={builds}
      featuredBuild={featuredBuild}
      favoriteBuild={favoriteBuild}
+     currentScene={currentScene}
      totalMods={totalMods}
      installedCount={installedCount}
      selectBuild={(build)=>setSelected(build)}
@@ -763,17 +802,21 @@ function App(){
   />}
   {modal==='profile'&&<ProfileModal
    profile={profile}
-   accounts={accounts}
+   accounts={normalizedAccounts}
    close={()=>setModal(null)}
    save={(nextProfile)=>{
     setProfile(nextProfile);
-    setAccounts((current)=>[...new Set([...current,nextProfile.name])]);
+    setAccounts((current)=>{
+     const normalized=current.map(normalizeAccount).filter((account)=>account.name!==nextProfile.name);
+     return [...normalized,{id:nextProfile.name,name:nextProfile.name,type:'local'}];
+    });
     setModal(null);
    }}
    select={(name)=>{
     setProfile({name});
     setModal(null);
    }}
+   removeAccount={removeAccount}
   />}
   {modal?.type==='create'&&<CreateModal initialVersion={modal.version} versions={versions} close={()=>setModal(null)} create={createBuild}/>}
   {download&&<DownloadOverlay progress={download}/>}
@@ -782,22 +825,70 @@ function App(){
  </div>;
 }
 
-function Onboarding({onDone}){
+function Onboarding({onDone,settings,setSettings}){
+ const [step,setStep]=useState(0);
  const [name,setName]=useState('');
+ const [selectedTheme,setSelectedTheme]=useState(settings.theme);
+ const [selectedScene,setSelectedScene]=useState(settings.scene==='auto'?(themeSceneMap[settings.theme]||'sakura-dusk'):settings.scene);
+ const [selectedDensity,setSelectedDensity]=useState(settings.density);
+ function finish(){
+  setSettings((current)=>({
+   ...current,
+   theme:selectedTheme,
+   scene:selectedScene,
+   density:selectedDensity
+  }));
+  onDone({name});
+ }
  return <div className="onboarding">
-  <div className="onboardCard">
+  <div className="onboardCard onboardWide">
    <img src={logo} alt="Sakura"/>
    <span className="eyebrow">SAKURA LAUNCHER</span>
-   <h1>Добро пожаловать в Sakura</h1>
-   <p>Создай локальный игровой профиль и начни собирать свои инстансы Minecraft в одном красивом месте.</p>
-   <input autoFocus value={name} onChange={(event)=>setName(event.target.value.replace(/[^A-Za-z0-9_]/g,'').slice(0,16))} placeholder="Твой ник"/>
-   <button className="primaryButton" disabled={name.length<3} onClick={()=>onDone({name})}>Продолжить</button>
+   <div className="onboardProgress">{[0,1,2].map((item)=><i key={item} className={step===item?'active':''}/>)}</div>
+   {step===0&&<>
+    <h1>Настрой атмосферу</h1>
+    <p>Выбери настроение интерфейса, чтобы Sakura сразу выглядела как твой собственный лаунчер.</p>
+    <div className="onboardChoiceGrid">
+     {themeOptions.map(([id,label,description])=><button key={id} className={`onboardChoice ${selectedTheme===id?'chosen':''}`} onClick={()=>{setSelectedTheme(id);setSelectedScene(themeSceneMap[id]||'sakura-dusk');}}>
+      <strong>{label}</strong>
+      <span>{description}</span>
+     </button>)}
+    </div>
+   </>}
+   {step===1&&<>
+    <h1>Выбери сцену и плотность</h1>
+    <p>Фон главного экрана и плотность интерфейса можно менять когда угодно в настройках.</p>
+    <div className="onboardChoiceGrid compactGrid">
+     {sceneOptions.filter(([id])=>id!=='auto').map(([id,label])=><button key={id} className={`onboardChoice ${selectedScene===id?'chosen':''}`} onClick={()=>setSelectedScene(id)}>
+      <strong>{label}</strong>
+      <span>Отдельная hero-сцена для главного экрана.</span>
+     </button>)}
+    </div>
+    <div className="themeChoices centeredChoices">
+     {[['compact','Compact'],['cozy','Cozy'],['spacious','Spacious']].map(([id,label])=><button key={id} className={selectedDensity===id?'chosen':''} onClick={()=>setSelectedDensity(id)}>{label}</button>)}
+    </div>
+   </>}
+   {step===2&&<>
+    <h1>Создай профиль</h1>
+    <p>Пока вход локальный, но интерфейс уже подготовлен под будущую Microsoft-авторизацию.</p>
+    <input autoFocus value={name} onChange={(event)=>setName(event.target.value.replace(/[^A-Za-z0-9_]/g,'').slice(0,16))} placeholder="Твой ник"/>
+    <div className="authPreviewCard">
+     <strong>Microsoft sign-in</strong>
+     <span>Soon: нормальный аккаунт для online-mode серверов, скин-синхронизация и управление профилями.</span>
+    </div>
+   </>}
+   <div className="modalFooter spreadFooter">
+    <button className="secondaryButton" disabled={!step} onClick={()=>setStep((value)=>Math.max(0,value-1))}>Назад</button>
+    {step<2
+     ?<button className="primaryButton" onClick={()=>setStep((value)=>Math.min(2,value+1))}>Дальше</button>
+     :<button className="primaryButton" disabled={name.length<3} onClick={finish}>Войти в Sakura</button>}
+   </div>
    <small>Локальный профиль не заменяет Microsoft-авторизацию для официальных online-mode серверов.</small>
   </div>
  </div>;
 }
 
-function Home({builds,featuredBuild,favoriteBuild,totalMods,installedCount,selectBuild,launch,openCreate,openSettings,openBuilds,discoverInstances,importFolder,importZipBuild,cacheStats,toggleFavoriteBuild}){
+function Home({builds,featuredBuild,favoriteBuild,currentScene,totalMods,installedCount,selectBuild,launch,openCreate,openSettings,openBuilds,discoverInstances,importFolder,importZipBuild,cacheStats,toggleFavoriteBuild}){
  const latestBuilds=[...builds].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,4);
  return <>
   <section className="heroCard">
@@ -806,22 +897,18 @@ function Home({builds,featuredBuild,favoriteBuild,totalMods,installedCount,selec
     <h2>Приведи лаунчер в порядок и запускай любимые миры без боли.</h2>
     <p>Изолированные сборки, Modrinth, realtime-логи и аккуратный интерфейс, в котором всё лежит по местам.</p>
     <div className="heroActions">
-     <button className="primaryButton" onClick={()=>featuredBuild?launch(featuredBuild):openCreate()}>{featuredBuild?'▶ Играть сейчас':'＋ Создать первую сборку'}</button>
-     <button className="secondaryButton" onClick={openBuilds}>Открыть менеджер сборок</button>
-     {featuredBuild&&<button className="secondaryButton" onClick={()=>toggleFavoriteBuild(featuredBuild.id)}>{favoriteBuild?.id===featuredBuild.id?'★ Убрать из избранного':'☆ Сделать избранной'}</button>}
+    <button className="primaryButton" onClick={()=>featuredBuild?launch(featuredBuild):openCreate()}>{featuredBuild?'▶ Играть сейчас':'＋ Создать первую сборку'}</button>
+    <button className="secondaryButton" onClick={openBuilds}>Открыть менеджер сборок</button>
+    {featuredBuild&&<button className="secondaryButton" onClick={()=>toggleFavoriteBuild(featuredBuild.id)}>{favoriteBuild?.id===featuredBuild.id?'★ Убрать из избранного':'☆ Сделать избранной'}</button>}
+    </div>
+    <div className="heroFeatureRow">
+     <span>✨ Новые темы и сцены</span>
+     <span>🧩 Modrinth и отдельные сборки</span>
+     <span>🔐 UI готов к Microsoft auth</span>
     </div>
    </div>
-   <div className="heroVisual">
-    <div className="sceneGlow"/>
-    <div className="sceneMoon"/>
-    <div className="sceneFog"/>
-    <div className="sceneMountain far"/>
-    <div className="sceneMountain near"/>
-    <div className="sceneLake"/>
-    <div className="sceneTower"/>
-    <div className="sceneGrass">
-     <i/><i/><i/><i/><i/>
-    </div>
+   <div className={`heroVisual scene-${currentScene}`}>
+    <HeroScene scene={currentScene}/>
     <div className="heroSpotlight">
      <span className="statusPill">{featuredBuild?featuredBuild.installed?'Готова к запуску':'Нужна установка':'Новый старт'}</span>
      <strong>{featuredBuild?.name||'Собери идеальный инстанс'}</strong>
@@ -862,6 +949,55 @@ function Home({builds,featuredBuild,favoriteBuild,totalMods,installedCount,selec
     {latestBuilds.map((build)=><BuildCard key={build.id} build={build} selected={featuredBuild} setSelected={selectBuild} launch={launch} compact favorite={favoriteBuild?.id===build.id} toggleFavoriteBuild={toggleFavoriteBuild}/>)}
    </div>:<EmptyBuilds onCreate={openCreate}/>}
   </section>
+ </>;
+}
+
+function HeroScene({scene}){
+ if(scene==='neon-city')return <>
+  <div className="sceneGlow"/>
+  <div className="sceneMoon square"/>
+  <div className="sceneStars"><i/><i/><i/><i/><i/><i/></div>
+  <div className="cityLine back"><i/><i/><i/><i/></div>
+  <div className="cityLine front"><i/><i/><i/><i/><i/></div>
+  <div className="sceneRoad"/>
+  <div className="sceneSignal"/>
+ </>;
+ if(scene==='blossom-garden')return <>
+  <div className="sceneGlow"/>
+  <div className="sceneSun"/>
+  <div className="gardenHill back"/>
+  <div className="gardenHill front"/>
+  <div className="gardenTree"><i/><i/><i/><i/><b/></div>
+  <div className="gardenFlowers"><i/><i/><i/><i/><i/><i/></div>
+ </>;
+ if(scene==='aurora-peaks')return <>
+  <div className="auroraBand a1"/>
+  <div className="auroraBand a2"/>
+  <div className="sceneMoon"/>
+  <div className="sceneFog"/>
+  <div className="auroraPeak far"/>
+  <div className="auroraPeak near"/>
+  <div className="auroraLake"/>
+ </>;
+ if(scene==='ember-valley')return <>
+  <div className="sceneSun ember"/>
+  <div className="emberCliff left"/>
+  <div className="emberCliff right"/>
+  <div className="emberBridge"/>
+  <div className="emberSmoke"><i/><i/><i/></div>
+  <div className="sceneGrass emberGround"><i/><i/><i/><i/></div>
+ </>;
+ return <>
+  <div className="sceneGlow"/>
+  <div className="sceneMoon"/>
+  <div className="sceneFog"/>
+  <div className="sceneMountain far"/>
+  <div className="sceneMountain near"/>
+  <div className="sceneLake"/>
+  <div className="sceneTower"/>
+  <div className="sceneGrass">
+   <i/><i/><i/><i/><i/>
+  </div>
  </>;
 }
 
@@ -1173,6 +1309,10 @@ function SettingsModal({profile,setStatus,settings,setSettings,close,reset,insta
      <div className="themeChoices">
       {themeOptions.map(([id,label])=><button key={id} className={settings.theme===id?'chosen':''} onClick={()=>set('theme',id)}>{label}</button>)}
      </div>
+     <label>Hero / background сцена</label>
+     <div className="themeChoices">
+     {sceneOptions.map(([id,label])=><button key={id} className={settings.scene===id?'chosen':''} onClick={()=>set('scene',id)}>{label}</button>)}
+     </div>
      <label>Акцент</label>
      <div className="accentRow">
       <input type="color" value={settings.accent} onChange={(event)=>set('accent',event.target.value)}/>
@@ -1235,6 +1375,18 @@ function SettingsModal({profile,setStatus,settings,setSettings,close,reset,insta
      </div>
      <p className="sectionLead">Избранная сборка: {favoriteBuild?.name||'не выбрана'}.</p>
     </section>
+    <section className="panelCard">
+     <h3>Будущий Microsoft auth</h3>
+     <div className="authRail">
+      <button className="chosen">Локальный профиль</button>
+      <button disabled>Microsoft soon</button>
+     </div>
+     <div className="authPreviewCard">
+      <strong>Что будет позже</strong>
+      <span>Вход через Microsoft, online-mode серверы, нормальный UUID/skin sync и переключение между локальным и облачным аккаунтом.</span>
+     </div>
+     <p className="sectionLead">Текущий активный профиль: {profile?.name||'не выбран'}.</p>
+    </section>
     <section className="panelCard wide">
      <h3>Пресеты атмосферы</h3>
      <div className="presetGrid">
@@ -1270,22 +1422,55 @@ function Toggle({label,value,onChange}){
 
 function Range({label,value,min,max,step,onChange,suffix=''}){return <label className="range"><span><b>{label}</b><em>{value}{suffix}</em></span><input type="range" min={min} max={max} step={step} value={value} onChange={(event)=>onChange(Number(event.target.value))}/></label>;}
 
-function ProfileModal({profile,accounts,close,save,select}){
+function ProfileModal({profile,accounts,close,save,select,removeAccount}){
  const [name,setName]=useState(profile.name);
+ const [tab,setTab]=useState('local');
  return <div className="modalShade">
-  <div className="modal">
+  <div className="settingsModal accountsModal">
    <button className="close" onClick={close}>×</button>
-   <span className="eyebrow">ПРОФИЛЬ</span>
-   <h2>Профили Minecraft</h2>
-   <p className="modalHint">Локальные профили. Для серверов с online-mode потребуется Microsoft-авторизация.</p>
-   <div className="profileList">
-    {accounts.filter(Boolean).map((account)=><button key={account} className={account===profile.name?'chosen':''} onClick={()=>select(account)}>{account}</button>)}
+   <span className="eyebrow">ACCOUNTS</span>
+   <h2>Профили и будущая авторизация</h2>
+   <p className="modalHint">Сейчас Sakura работает с локальными никами, но интерфейс уже подготовлен под Microsoft sign-in.</p>
+   <div className="authRail">
+    <button className={tab==='local'?'chosen':''} onClick={()=>setTab('local')}>Локальные профили</button>
+    <button className={tab==='microsoft'?'chosen':''} onClick={()=>setTab('microsoft')}>Microsoft preview</button>
    </div>
-   <input value={name} onChange={(event)=>setName(event.target.value.replace(/[^A-Za-z0-9_]/g,'').slice(0,16))} placeholder="Новый ник"/>
-   <div className="modalFooter">
-    <button className="secondaryButton" onClick={close}>Отмена</button>
-    <button className="primaryButton" disabled={name.length<3} onClick={()=>save({name})}>Добавить / сохранить</button>
-   </div>
+   {tab==='local'&&<>
+    <div className="accountsGrid">
+     {accounts.filter(Boolean).map((account,index)=><article key={account.id} className={`accountRow ${account.name===profile.name?'active':''}`} style={{'--delay':`${index*50}ms`}}>
+      <span className="profileAvatar">{account.name.slice(0,2).toUpperCase()}</span>
+      <div className="accountMeta">
+       <strong>{account.name}</strong>
+       <span>{account.type==='local'?'Локальный профиль':'Профиль'}</span>
+      </div>
+      <div className="accountActions">
+       <button className="secondaryButton small" onClick={()=>select(account.name)}>{account.name===profile.name?'Активен':'Выбрать'}</button>
+       {accounts.length>1&&<button className="iconButton subtle" title="Удалить профиль" onClick={()=>removeAccount(account.name)}>×</button>}
+      </div>
+     </article>)}
+    </div>
+    <div className="panelCard authCard">
+     <h3>Новый локальный профиль</h3>
+     <input value={name} onChange={(event)=>setName(event.target.value.replace(/[^A-Za-z0-9_]/g,'').slice(0,16))} placeholder="Новый ник"/>
+     <div className="modalFooter">
+      <button className="secondaryButton" onClick={close}>Отмена</button>
+      <button className="primaryButton" disabled={name.length<3} onClick={()=>save({name})}>Добавить / сохранить</button>
+     </div>
+    </div>
+   </>}
+   {tab==='microsoft'&&<div className="panelCard authPreviewPanel">
+    <h3>Microsoft sign-in скоро</h3>
+    <p className="sectionLead">Подготовил UI-блок под будущий вход через Microsoft: online-mode серверы, нормальные UUID, скины и облачные аккаунты.</p>
+    <div className="msPreviewRow">
+     <button className="msButton" disabled>🔐 Войти через Microsoft</button>
+     <span className="targetPill">Coming soon</span>
+    </div>
+    <div className="previewChecklist">
+     <span>✓ Переключатель local / Microsoft</span>
+     <span>✓ Отдельная зона под подключённый аккаунт</span>
+     <span>✓ Подготовка UI под будущий auth flow</span>
+    </div>
+   </div>}
   </div>
  </div>;
 }
