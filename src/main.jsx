@@ -46,6 +46,39 @@ const modTypeLabels={
  shader:'Шейдеры',
  modpack:'Готовые сборки'
 };
+const visualPresets=[
+ {id:'blossom',label:'Blossom',hint:'Мягкий розовый glow и уютная атмосфера.',values:{theme:'sakura',accent:'#f4a0bd',particles:true,particleCount:28,particleOpacity:.24,glow:true,animations:true}},
+ {id:'midnight',label:'Midnight',hint:'Холодный тёмный стиль с более спокойным свечением.',values:{theme:'midnight',accent:'#7fb6ff',particles:true,particleCount:20,particleOpacity:.16,glow:true,animations:true}},
+ {id:'ember',label:'Ember',hint:'Тёплый акцент для более контрастного игрового вида.',values:{theme:'rose',accent:'#ffb074',particles:false,particleCount:12,particleOpacity:.12,glow:true,animations:true}}
+];
+
+class LauncherErrorBoundary extends React.Component{
+ constructor(props){
+  super(props);
+  this.state={error:null};
+ }
+ static getDerivedStateFromError(error){
+  return {error};
+ }
+ componentDidCatch(error){
+  console.error('Sakura UI error:',error);
+ }
+ render(){
+  if(this.state.error){
+   return <div className="fatalScreen">
+    <div className="fatalCard">
+     <span className="eyebrow">UI RECOVERY</span>
+     <h1>Интерфейс поймал ошибку</h1>
+     <p>Sakura не должна оставлять тебя с пустым окном. Попробуй мягко перезагрузить интерфейс.</p>
+     <div className="modalFooter">
+      <button className="secondaryButton" onClick={()=>location.reload()}>Перезапустить интерфейс</button>
+     </div>
+    </div>
+   </div>;
+  }
+  return this.props.children;
+ }
+}
 
 function App(){
  const [tab,setTab]=useState('home');
@@ -100,9 +133,13 @@ function App(){
    if(event.payload?.crashed){
     setStatus('Minecraft завершилась с ошибкой — открой логи.');
     setLogOpen(true);
+    appWindow.show().catch(()=>{});
+    appWindow.setFocus().catch(()=>{});
     return;
    }
    setStatus('Minecraft завершена.');
+   appWindow.show().catch(()=>{});
+   appWindow.setFocus().catch(()=>{});
    if(settings.rpc&&settings.rpcClientId){
     invoke('rpc_update',{
      clientId:settings.rpcClientId,
@@ -821,6 +858,13 @@ function StatCard({label,value,note}){
 }
 
 function BuildsPage({builds,selected,setSelected,setModal,importZipBuild,deleteBuild,launch}){
+ const [query,setQuery]=useState('');
+ const [filter,setFilter]=useState('all');
+ const filteredBuilds=builds.filter((build)=>{
+  const matchesQuery=!query.trim()||build.name.toLowerCase().includes(query.trim().toLowerCase())||String(build.version||'').toLowerCase().includes(query.trim().toLowerCase())||String(build.loader||'').toLowerCase().includes(query.trim().toLowerCase());
+  const matchesFilter=filter==='all'||(filter==='installed'&&build.installed)||(filter==='not-installed'&&!build.installed);
+  return matchesQuery&&matchesFilter;
+ });
  return <section className="sectionCard">
   <div className="sectionHead">
    <div>
@@ -833,8 +877,16 @@ function BuildsPage({builds,selected,setSelected,setModal,importZipBuild,deleteB
     <button className="primaryButton" onClick={()=>setModal({type:'create'})}>＋ Новая сборка</button>
    </div>
   </div>
-  {builds.length?<div className="buildGrid">
-   {builds.map((build)=><BuildCard
+  <div className="buildTools">
+   <input value={query} onChange={(event)=>setQuery(event.target.value)} placeholder="Поиск по названию, версии или loader…"/>
+   <div className="filterRow compact">
+    <button className={filter==='all'?'active':''} onClick={()=>setFilter('all')}>Все</button>
+    <button className={filter==='installed'?'active':''} onClick={()=>setFilter('installed')}>Установленные</button>
+    <button className={filter==='not-installed'?'active':''} onClick={()=>setFilter('not-installed')}>Не установленные</button>
+   </div>
+  </div>
+  {filteredBuilds.length?<div className="buildGrid">
+   {filteredBuilds.map((build)=><BuildCard
     key={build.id}
     build={build}
     selected={selected}
@@ -842,7 +894,7 @@ function BuildsPage({builds,selected,setSelected,setModal,importZipBuild,deleteB
     deleteBuild={deleteBuild}
     launch={launch}
    />)}
-  </div>:<EmptyBuilds onCreate={()=>setModal({type:'create'})}/>}
+  </div>:builds.length?<div className="emptyState compactEmpty"><h3>Ничего не найдено</h3><p>Попробуй другой запрос или переключи фильтр сборок.</p></div>:<EmptyBuilds onCreate={()=>setModal({type:'create'})}/>}
  </section>;
 }
 
@@ -1019,12 +1071,12 @@ function LogPanel({logs,close}){
  const ref=useRef(null);
  useEffect(()=>ref.current?.scrollTo(0,ref.current.scrollHeight),[logs]);
  const safeClose=(event)=>{event?.preventDefault();event?.stopPropagation();close();};
- return <div className="modalShade" onMouseDown={(event)=>event.stopPropagation()}>
-  <div className="logModal" onMouseDown={(event)=>event.stopPropagation()}>
+ return <div className="modalShade" onClick={safeClose}>
+ <div className="logModal" onClick={(event)=>event.stopPropagation()}>
    <button type="button" className="close" onClick={safeClose}>×</button>
    <span className="eyebrow">MINECRAFT CONSOLE</span>
    <h2>Логи запуска</h2>
-   <pre ref={ref}>{logs.length?logs.map((line,index)=><div key={index}>{line}</div>):'Ожидание вывода Minecraft…'}</pre>
+  <div ref={ref} className="logOutput">{logs.length?logs.map((line,index)=><div key={index} className="logLine">{line}</div>):<div className="logPlaceholder">Ожидание вывода Minecraft…</div>}</div>
    <div className="modalFooter">
     <button type="button" className="secondaryButton" onClick={()=>navigator.clipboard?.writeText(logs.join('\n'))}>Скопировать лог</button>
     <button type="button" className="primaryButton" onClick={safeClose}>Закрыть</button>
@@ -1083,6 +1135,7 @@ function CreateModal({initialVersion,versions,close,create}){
 
 function SettingsModal({profile,setStatus,settings,setSettings,close,reset,installJava,javaInstalling,cacheStats,discoverInstances,checkLauncherUpdate}){
  const set=(key,value)=>setSettings((current)=>({...current,[key]:value}));
+ const applyPreset=(preset)=>setSettings((current)=>({...current,...preset.values}));
  return <div className="modalShade">
   <div className="settingsModal">
    <button className="close" onClick={close}>×</button>
@@ -1152,6 +1205,15 @@ function SettingsModal({profile,setStatus,settings,setSettings,close,reset,insta
      <Range label="Размер" value={settings.particleSize} min={0.5} max={2.5} step={0.1} suffix="×" onChange={(value)=>set('particleSize',value)}/>
     </section>
     <section className="panelCard wide">
+     <h3>Пресеты атмосферы</h3>
+     <div className="presetGrid">
+      {visualPresets.map((preset)=><button key={preset.id} className="presetCard" onClick={()=>applyPreset(preset)}>
+       <strong>{preset.label}</strong>
+       <span>{preset.hint}</span>
+      </button>)}
+     </div>
+    </section>
+    <section className="panelCard wide">
      <h3>Система лаунчера</h3>
      <div className="actionGrid compact">
       <button className="actionTile" onClick={cacheStats}><strong>Размер кеша</strong><span>Посмотреть общий объём libraries, assets и runtime.</span></button>
@@ -1206,4 +1268,4 @@ function loaderShort(loader){
  return 'VN';
 }
 
-createRoot(document.getElementById('root')).render(<App/>);
+createRoot(document.getElementById('root')).render(<LauncherErrorBoundary><App/></LauncherErrorBoundary>);

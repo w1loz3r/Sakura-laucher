@@ -162,6 +162,23 @@ fn replace_vars(s: &str, vars: &HashMap<String,String>) -> String {
     for (k,v) in vars { out=out.replace(&format!("${{{}}}",k),v); }
     out
 }
+fn offline_uuid(username:&str)->String{
+    let mut hasher=Sha1::new();
+    hasher.update(format!("OfflinePlayer:{username}").as_bytes());
+    let mut bytes=[0u8;16];
+    bytes.copy_from_slice(&hasher.finalize()[..16]);
+    bytes[6]=(bytes[6]&0x0f)|0x50;
+    bytes[8]=(bytes[8]&0x3f)|0x80;
+    format!(
+        "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+        bytes[0],bytes[1],bytes[2],bytes[3],bytes[4],bytes[5],bytes[6],bytes[7],bytes[8],bytes[9],bytes[10],bytes[11],bytes[12],bytes[13],bytes[14],bytes[15]
+    )
+}
+fn offline_access_token(username:&str)->String{
+    let mut hasher=Sha1::new();
+    hasher.update(format!("SakuraOfflineToken:{username}").as_bytes());
+    format!("{:x}",hasher.finalize())
+}
 fn collect_args(v: Option<&Value>, vars: &HashMap<String,String>) -> Vec<String> {
     let mut out=Vec::new();
     if let Some(arr)=v.and_then(Value::as_array) {
@@ -746,15 +763,22 @@ fn launch_instance(app:tauri::AppHandle,id:String,version:String,username:String
     let java=if let Some(found)=launch_java_path(java_path.as_deref()){found}else{ensure_java_for_version(&app,&meta,&version)?};
     let assets=meta.get("assetIndex").and_then(|x|x.get("id")).and_then(Value::as_str).unwrap_or("legacy");
     let mut vars=HashMap::new();
+    let offline_uuid=offline_uuid(&username);
+    let offline_token=offline_access_token(&username);
     vars.insert("auth_player_name".into(),username.clone());
     vars.insert("version_name".into(),version.clone());
     vars.insert("game_directory".into(),game.to_string_lossy().into());
     let cache=shared_root(&app)?;
     vars.insert("assets_root".into(),cache.join("assets").to_string_lossy().into());
     vars.insert("assets_index_name".into(),assets.into());
-    vars.insert("auth_uuid".into(),"00000000-0000-0000-0000-000000000000".into());
-    vars.insert("auth_access_token".into(),"0".into());
-    vars.insert("user_type".into(),"legacy".into());
+    vars.insert("auth_uuid".into(),offline_uuid.clone());
+    vars.insert("auth_access_token".into(),offline_token.clone());
+    vars.insert("auth_session".into(),offline_token.clone());
+    vars.insert("auth_xuid".into(),"".into());
+    vars.insert("xuid".into(),"".into());
+    vars.insert("clientid".into(),offline_uuid.clone());
+    vars.insert("user_properties".into(),"{}".into());
+    vars.insert("user_type".into(),"msa".into());
     vars.insert("version_type".into(),meta.get("type").and_then(Value::as_str).unwrap_or("release").into());
     vars.insert("natives_directory".into(),game.join("natives").to_string_lossy().into());
     vars.insert("library_directory".into(),cache.join("libraries").to_string_lossy().into());
@@ -780,6 +804,7 @@ fn launch_instance(app:tauri::AppHandle,id:String,version:String,username:String
     let opts=options.unwrap_or_default(); let min_ram=opts.min_ram.unwrap_or(1024).clamp(512,32768); let max_ram=opts.max_ram.unwrap_or(4096).max(min_ram).clamp(512,32768); jvm_args.insert(0,format!("-Xms{}M",min_ram)); jvm_args.insert(1,format!("-Xmx{}M",max_ram)); if let Some(extra)=opts.jvm_args{jvm_args.extend(extra.split_whitespace().map(str::to_string));} if let (Some(w),Some(h))=(opts.width,opts.height){game_args.extend(["--width".into(),w.clamp(640,7680).to_string(),"--height".into(),h.clamp(480,4320).to_string()]);} if opts.fullscreen.unwrap_or(false){game_args.push("--fullscreen".into());} let mut args=Vec::new(); args.extend(jvm_args); args.push("-Djava.library.path=${natives_directory}".replace("${natives_directory}",&vars["natives_directory"])); args.push("-cp".into()); args.push(cp.join(";")); args.push(main_class); args.extend(game_args);
     let _ = app.emit("minecraft-log", json!({"line":format!("[Sakura] Запуск Minecraft {} / {}",version,loader),"stream":"launcher"}));
     let _ = app.emit("minecraft-log", json!({"line":format!("[Sakura] Java: {}",java),"stream":"launcher"}));
+    let _ = app.emit("minecraft-log", json!({"line":format!("[Sakura] Локальный offline UUID: {}",offline_uuid),"stream":"launcher"}));
     let mut command=Command::new(&java);
     command.args(args).current_dir(&game).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
     #[cfg(windows)]

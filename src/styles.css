@@ -381,6 +381,7 @@ input:focus,select:focus{
 .topbarActions,
 .heroActions,
 .toolbar,
+.buildTools,
 .modalFooter,
 .sheetActions,
 .inlineActions,
@@ -630,6 +631,12 @@ input:focus,select:focus{
 }
 .versionGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
 .modGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.buildTools{
+  justify-content:space-between;
+  align-items:flex-start;
+  margin-bottom:18px;
+}
+.buildTools input{max-width:420px}
 
 .buildCard,
 .versionCard,
@@ -729,6 +736,10 @@ input:focus,select:focus{
   gap:10px;
   margin-bottom:18px;
 }
+.filterRow.compact{
+  margin:0;
+  justify-content:flex-end;
+}
 .filterRow button{
   padding:10px 14px;
   border-radius:999px;
@@ -780,6 +791,8 @@ input:focus,select:focus{
   z-index:80;
 }
 .sheetShade{place-items:stretch end}
+.modalShade,
+.downloadShade{z-index:95}
 .sheet{
   width:min(520px,100vw);
   height:100vh;
@@ -888,7 +901,7 @@ code{
   display:flex;
   flex-direction:column;
 }
-.logModal pre{
+.logOutput{
   flex:1;
   overflow:auto;
   padding:18px;
@@ -897,8 +910,10 @@ code{
   border:1px solid rgba(255,255,255,.07);
   color:#dbe1f6;
   font:12px/1.6 ui-monospace,monospace;
-  white-space:pre-wrap;
 }
+.logLine{white-space:pre-wrap;word-break:break-word}
+.logLine+.logLine{margin-top:4px}
+.logPlaceholder{color:var(--muted)}
 .downloadCard{
   width:min(520px,calc(100vw - 32px));
   padding:30px;
@@ -943,8 +958,14 @@ code{
   flex-wrap:wrap;
   gap:10px;
 }
+.presetGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
 .themeChoices button,
-.profileList button{
+.profileList button,
+.presetCard{
   padding:11px 14px;
   border-radius:14px;
   background:rgba(255,255,255,.05);
@@ -956,6 +977,26 @@ code{
 .profileList button.chosen{
   background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,transparent),rgba(255,255,255,.08));
   border-color:color-mix(in srgb,var(--accent) 35%,transparent);
+}
+.presetCard{
+  display:block;
+  text-align:left;
+  min-height:112px;
+}
+.presetCard strong{
+  display:block;
+  margin-bottom:8px;
+  font-size:16px;
+}
+.presetCard span{
+  display:block;
+  color:var(--muted);
+  line-height:1.6;
+  font-size:13px;
+}
+.presetCard:hover{
+  transform:translateY(-2px);
+  border-color:color-mix(in srgb,var(--accent) 24%,rgba(255,255,255,.14));
 }
 .accentRow{
   display:grid;
@@ -1164,6 +1205,34 @@ code{
 }
 .emptyState h3{margin:6px 0 0;font-size:24px}
 .emptyState p{max-width:430px;color:var(--muted);line-height:1.7}
+.compactEmpty{min-height:160px}
+
+.fatalScreen{
+  position:fixed;
+  inset:0;
+  display:grid;
+  place-items:center;
+  padding:20px;
+  background:linear-gradient(180deg,#10131e 0%,#090a0f 100%);
+}
+.fatalCard{
+  width:min(520px,100%);
+  padding:30px;
+  border-radius:28px;
+  background:var(--panel);
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:var(--shadow);
+}
+.fatalCard h1{
+  margin:8px 0 12px;
+  font-size:34px;
+  letter-spacing:-.05em;
+}
+.fatalCard p{
+  margin:0;
+  color:var(--muted);
+  line-height:1.7;
+}
 
 ::-webkit-scrollbar{width:11px;height:11px}
 ::-webkit-scrollbar-thumb{
@@ -1175,7 +1244,7 @@ code{
 
 @media (max-width:1280px){
   .searchPanel{grid-template-columns:minmax(0,1fr) 150px 170px auto}
-  .actionGrid,.versionGrid,.modGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .actionGrid,.versionGrid,.modGrid,.presetGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
 @media (max-width:1080px){
@@ -1196,6 +1265,8 @@ code{
   .settingsModal,
   .logModal,
   .downloadCard{padding:20px}
-  .searchPanel,.twoCols{grid-template-columns:1fr}
+  .searchPanel,.twoCols,.presetGrid{grid-template-columns:1fr}
   .sheet{width:100vw;border-radius:0}
+  .buildTools{flex-direction:column}
+  .filterRow.compact{justify-content:flex-start}
 }
