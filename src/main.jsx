@@ -29,7 +29,10 @@ const defaultSettings={
  height:720,
  fullscreen:false,
  rpc:true,
- rpcClientId:''
+ rpcClientId:'',
+ openLogsOnLaunch:false,
+ density:'cozy',
+ favoriteBuildId:''
 };
 const getSettings=()=>({...defaultSettings,...JSON.parse(localStorage.getItem('sakura.settings')||'{}')});
 const appWindow=getCurrentWindow();
@@ -100,6 +103,7 @@ function App(){
  const [logOpen,setLogOpen]=useState(false);
  const [javaInstalling,setJavaInstalling]=useState(false);
  const [accounts,setAccounts]=useState(()=>JSON.parse(localStorage.getItem('sakura.accounts')||'[]'));
+ const safeShowLauncher=()=>{appWindow.show().catch(()=>{});appWindow.setFocus().catch(()=>{});};
 
  useEffect(()=>{if(profile)localStorage.setItem('sakura.profile',JSON.stringify(profile));},[profile]);
  useEffect(()=>saveBuilds(builds),[builds]);
@@ -133,13 +137,12 @@ function App(){
    if(event.payload?.crashed){
     setStatus('Minecraft завершилась с ошибкой — открой логи.');
     setLogOpen(true);
-    appWindow.show().catch(()=>{});
-    appWindow.setFocus().catch(()=>{});
+    safeShowLauncher();
     return;
    }
    setStatus('Minecraft завершена.');
-   appWindow.show().catch(()=>{});
-   appWindow.setFocus().catch(()=>{});
+   if(!settings.openLogsOnLaunch)setLogOpen(false);
+   safeShowLauncher();
    if(settings.rpc&&settings.rpcClientId){
     invoke('rpc_update',{
      clientId:settings.rpcClientId,
@@ -152,7 +155,8 @@ function App(){
   return()=>{offProgress?.();offLog?.();offExit?.();};
  },[profile?.name,settings.rpc,settings.rpcClientId]);
 
- const featuredBuild=selected||builds[0]||null;
+ const favoriteBuild=builds.find((build)=>build.id===settings.favoriteBuildId)||null;
+ const featuredBuild=selected||favoriteBuild||builds[0]||null;
  const totalMods=useMemo(()=>builds.reduce((sum,build)=>sum+(build.mods?.length||0),0),[builds]);
  const installedCount=useMemo(()=>builds.filter((build)=>build.installed).length,[builds]);
  const petals=useMemo(()=>Array.from({length:settings.particles?settings.particleCount:0},(_,index)=>({
@@ -259,7 +263,7 @@ function App(){
    let workingBuild=build;
    if(!workingBuild.installed)workingBuild=await install(workingBuild);
    setLogs([]);
-   setLogOpen(true);
+   setLogOpen(!!settings.openLogsOnLaunch);
    setStatus('Запускаю Minecraft…');
    if(settings.rpc&&settings.rpcClientId){
     invoke('rpc_update',{
@@ -289,6 +293,9 @@ function App(){
    setLogOpen(true);
    setStatus(`Не удалось запустить Minecraft: ${String(error)}`);
   }
+ }
+ function toggleFavoriteBuild(buildId){
+  setSettings((current)=>({...current,favoriteBuildId:current.favoriteBuildId===buildId?'':buildId}));
  }
 
  async function installJava(){
@@ -612,7 +619,7 @@ function App(){
  if(!profile)return <Onboarding onDone={setProfile}/>;
 
  return <div
-  className={`app theme-${settings.theme} ${settings.glow?'glow-on':''} ${settings.animations?'animations-on':'animations-off'}`}
+  className={`app theme-${settings.theme} density-${settings.density} ${settings.glow?'glow-on':''} ${settings.animations?'animations-on':'animations-off'}`}
   style={{'--accent':settings.accent,'--particle-opacity':settings.particleOpacity}}
  >
   <div className="titlebar" data-tauri-drag-region>
@@ -676,6 +683,7 @@ function App(){
     {tab==='home'&&<Home
      builds={builds}
      featuredBuild={featuredBuild}
+     favoriteBuild={favoriteBuild}
      totalMods={totalMods}
      installedCount={installedCount}
      selectBuild={(build)=>setSelected(build)}
@@ -687,6 +695,7 @@ function App(){
      importFolder={importFolder}
      importZipBuild={importZipBuild}
      cacheStats={cacheStats}
+     toggleFavoriteBuild={toggleFavoriteBuild}
     />}
     {tab==='builds'&&<BuildsPage
      builds={builds}
@@ -696,6 +705,8 @@ function App(){
      importZipBuild={importZipBuild}
      deleteBuild={deleteBuild}
      launch={launch}
+     favoriteBuildId={settings.favoriteBuildId}
+     toggleFavoriteBuild={toggleFavoriteBuild}
     />}
     {tab==='versions'&&<Versions versions={versions} loading={loadingVersions} onCreate={(version)=>setModal({type:'create',version:version.id})}/>}
     {tab==='mods'&&<Mods
@@ -732,6 +743,8 @@ function App(){
    fpsBoost={fpsBoost}
    deleteBuild={deleteBuild}
    setBuild={syncBuild}
+   favoriteBuildId={settings.favoriteBuildId}
+   toggleFavoriteBuild={toggleFavoriteBuild}
   />}
   {modal==='settings'&&<SettingsModal
    profile={profile}
@@ -745,6 +758,8 @@ function App(){
    reset={()=>setSettings(defaultSettings)}
    installJava={installJava}
    javaInstalling={javaInstalling}
+   toggleFavoriteBuild={toggleFavoriteBuild}
+   favoriteBuild={favoriteBuild}
   />}
   {modal==='profile'&&<ProfileModal
    profile={profile}
@@ -782,7 +797,7 @@ function Onboarding({onDone}){
  </div>;
 }
 
-function Home({builds,featuredBuild,totalMods,installedCount,selectBuild,launch,openCreate,openSettings,openBuilds,discoverInstances,importFolder,importZipBuild,cacheStats}){
+function Home({builds,featuredBuild,favoriteBuild,totalMods,installedCount,selectBuild,launch,openCreate,openSettings,openBuilds,discoverInstances,importFolder,importZipBuild,cacheStats,toggleFavoriteBuild}){
  const latestBuilds=[...builds].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,4);
  return <>
   <section className="heroCard">
@@ -793,6 +808,7 @@ function Home({builds,featuredBuild,totalMods,installedCount,selectBuild,launch,
     <div className="heroActions">
      <button className="primaryButton" onClick={()=>featuredBuild?launch(featuredBuild):openCreate()}>{featuredBuild?'▶ Играть сейчас':'＋ Создать первую сборку'}</button>
      <button className="secondaryButton" onClick={openBuilds}>Открыть менеджер сборок</button>
+     {featuredBuild&&<button className="secondaryButton" onClick={()=>toggleFavoriteBuild(featuredBuild.id)}>{favoriteBuild?.id===featuredBuild.id?'★ Убрать из избранного':'☆ Сделать избранной'}</button>}
     </div>
    </div>
    <div className="heroVisual">
@@ -809,7 +825,7 @@ function Home({builds,featuredBuild,totalMods,installedCount,selectBuild,launch,
     <div className="heroSpotlight">
      <span className="statusPill">{featuredBuild?featuredBuild.installed?'Готова к запуску':'Нужна установка':'Новый старт'}</span>
      <strong>{featuredBuild?.name||'Собери идеальный инстанс'}</strong>
-     <small>{featuredBuild?`${featuredBuild.version} · ${featuredBuild.loader}`:'Создай отдельную сборку под ванилу, моды или приключение с друзьями.'}</small>
+     <small>{featuredBuild?`${favoriteBuild?.id===featuredBuild.id?'Избранная сборка · ':''}${featuredBuild.version} · ${featuredBuild.loader}`:'Создай отдельную сборку под ванилу, моды или приключение с друзьями.'}</small>
     </div>
    </div>
   </section>
@@ -843,7 +859,7 @@ function Home({builds,featuredBuild,totalMods,installedCount,selectBuild,launch,
     <button className="textButton" onClick={openBuilds}>Все сборки →</button>
    </div>
    {latestBuilds.length?<div className="buildGrid">
-    {latestBuilds.map((build)=><BuildCard key={build.id} build={build} selected={featuredBuild} setSelected={selectBuild} launch={launch} compact/>)}
+    {latestBuilds.map((build)=><BuildCard key={build.id} build={build} selected={featuredBuild} setSelected={selectBuild} launch={launch} compact favorite={favoriteBuild?.id===build.id} toggleFavoriteBuild={toggleFavoriteBuild}/>)}
    </div>:<EmptyBuilds onCreate={openCreate}/>}
   </section>
  </>;
@@ -857,7 +873,7 @@ function StatCard({label,value,note}){
  </article>;
 }
 
-function BuildsPage({builds,selected,setSelected,setModal,importZipBuild,deleteBuild,launch}){
+function BuildsPage({builds,selected,setSelected,setModal,importZipBuild,deleteBuild,launch,favoriteBuildId,toggleFavoriteBuild}){
  const [query,setQuery]=useState('');
  const [filter,setFilter]=useState('all');
  const filteredBuilds=builds.filter((build)=>{
@@ -893,16 +909,21 @@ function BuildsPage({builds,selected,setSelected,setModal,importZipBuild,deleteB
     setSelected={setSelected}
     deleteBuild={deleteBuild}
     launch={launch}
+    favorite={favoriteBuildId===build.id}
+    toggleFavoriteBuild={toggleFavoriteBuild}
    />)}
   </div>:builds.length?<div className="emptyState compactEmpty"><h3>Ничего не найдено</h3><p>Попробуй другой запрос или переключи фильтр сборок.</p></div>:<EmptyBuilds onCreate={()=>setModal({type:'create'})}/>}
  </section>;
 }
 
-function BuildCard({build,selected,setSelected,deleteBuild,launch,compact=false}){
+function BuildCard({build,selected,setSelected,deleteBuild,launch,compact=false,favorite=false,toggleFavoriteBuild}){
  return <article className={`buildCard ${selected?.id===build.id?'selected':''} ${compact?'compact':''}`} onClick={()=>setSelected(build)}>
   <div className="buildCardTop">
    <div className={`loaderBadge loader-${String(build.loader||'vanilla').toLowerCase()}`}>{loaderShort(build.loader)}</div>
-   <button className="iconButton subtle" title="Удалить" onClick={(event)=>{event.stopPropagation();deleteBuild?.(build.id);}}>×</button>
+   <div className="buildCardIcons">
+    {toggleFavoriteBuild&&<button className={`iconButton subtle ${favorite?'favorite':''}`} title={favorite?'Убрать из избранного':'Сделать избранной'} onClick={(event)=>{event.stopPropagation();toggleFavoriteBuild(build.id);}}>{favorite?'★':'☆'}</button>}
+    <button className="iconButton subtle" title="Удалить" onClick={(event)=>{event.stopPropagation();deleteBuild?.(build.id);}}>×</button>
+   </div>
   </div>
   <div className="buildCardBody">
    <strong>{build.name}</strong>
@@ -994,7 +1015,7 @@ function Mods({query,setQuery,loader,setLoader,version,setVersion,modType,setMod
  </section>;
 }
 
-function BuildPanel({build,close,launch,install,repair,checkUpdates,configureBuild,duplicateBuild,renameBuild,exportBuild,backupBuild,restoreBackup,fpsBoost,deleteBuild,setBuild}){
+function BuildPanel({build,close,launch,install,repair,checkUpdates,configureBuild,duplicateBuild,renameBuild,exportBuild,backupBuild,restoreBackup,fpsBoost,deleteBuild,setBuild,favoriteBuildId,toggleFavoriteBuild}){
  const [files,setFiles]=useState({mods:[]});
  async function refresh(){
   try{
@@ -1034,6 +1055,7 @@ function BuildPanel({build,close,launch,install,repair,checkUpdates,configureBui
     <section className="panelCard">
      <h3>Управление</h3>
      <div className="listButtons">
+      <button onClick={()=>toggleFavoriteBuild?.(build.id)}>{favoriteBuildId===build.id?'★ Убрать из избранного':'☆ Сделать избранной'}</button>
       <button onClick={()=>duplicateBuild(build)}>Дубликат</button>
       <button onClick={()=>renameBuild(build)}>Переименовать</button>
       <button onClick={()=>exportBuild(build)}>Экспорт</button>
@@ -1133,7 +1155,7 @@ function CreateModal({initialVersion,versions,close,create}){
  </div>;
 }
 
-function SettingsModal({profile,setStatus,settings,setSettings,close,reset,installJava,javaInstalling,cacheStats,discoverInstances,checkLauncherUpdate}){
+function SettingsModal({profile,setStatus,settings,setSettings,close,reset,installJava,javaInstalling,cacheStats,discoverInstances,checkLauncherUpdate,favoriteBuild}){
  const set=(key,value)=>setSettings((current)=>({...current,[key]:value}));
  const applyPreset=(preset)=>setSettings((current)=>({...current,...preset.values}));
  return <div className="modalShade">
@@ -1203,6 +1225,15 @@ function SettingsModal({profile,setStatus,settings,setSettings,close,reset,insta
      <Range label="Скорость" value={settings.particleSpeed} min={0.3} max={2.5} step={0.1} suffix="×" onChange={(value)=>set('particleSpeed',value)}/>
      <Range label="Прозрачность" value={settings.particleOpacity} min={0.08} max={0.6} step={0.01} onChange={(value)=>set('particleOpacity',value)}/>
      <Range label="Размер" value={settings.particleSize} min={0.5} max={2.5} step={0.1} suffix="×" onChange={(value)=>set('particleSize',value)}/>
+    </section>
+    <section className="panelCard">
+     <h3>Поведение лаунчера</h3>
+     <Toggle label="Автоматически открывать логи при запуске" value={settings.openLogsOnLaunch} onChange={(value)=>set('openLogsOnLaunch',value)}/>
+     <label>Плотность интерфейса</label>
+     <div className="themeChoices">
+      {[['compact','Compact'],['cozy','Cozy'],['spacious','Spacious']].map(([id,label])=><button key={id} className={settings.density===id?'chosen':''} onClick={()=>set('density',id)}>{label}</button>)}
+     </div>
+     <p className="sectionLead">Избранная сборка: {favoriteBuild?.name||'не выбрана'}.</p>
     </section>
     <section className="panelCard wide">
      <h3>Пресеты атмосферы</h3>

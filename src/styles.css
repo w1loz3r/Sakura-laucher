@@ -84,6 +84,28 @@ input:focus,select:focus{
   animation:none!important;
   transition:none!important;
 }
+.density-compact .sidebar,
+.density-compact .sectionCard,
+.density-compact .sheet,
+.density-compact .modal,
+.density-compact .settingsModal,
+.density-compact .downloadCard,
+.density-compact .logModal{padding:18px}
+.density-compact .heroCopy{padding:22px}
+.density-compact .buildCard{padding:14px}
+.density-compact .topbar h1{font-size:30px}
+.density-spacious .sidebar,
+.density-spacious .sectionCard,
+.density-spacious .sheet,
+.density-spacious .modal,
+.density-spacious .settingsModal,
+.density-spacious .downloadCard,
+.density-spacious .logModal{padding:30px}
+.density-spacious .heroCopy{padding:36px}
+.density-spacious .buildGrid,
+.density-spacious .modGrid,
+.density-spacious .versionGrid,
+.density-spacious .actionGrid{gap:18px}
 
 .titlebar{
   position:fixed;
@@ -659,6 +681,10 @@ input:focus,select:focus{
   justify-content:space-between;
   align-items:center;
 }
+.buildCardIcons{
+  display:flex;
+  gap:8px;
+}
 .loaderBadge{
   width:48px;
   height:48px;
@@ -1107,6 +1133,10 @@ code{
   width:36px;
   height:36px;
   background:rgba(255,255,255,.04);
+}
+.iconButton.favorite{
+  color:color-mix(in srgb,var(--accent) 82%,white);
+  border-color:color-mix(in srgb,var(--accent) 24%,rgba(255,255,255,.08));
 }
 .chipButton{
   padding:11px 14px;
