@@ -207,11 +207,8 @@ input:focus,select:focus{
 .shell{
   position:relative;
   z-index:2;
-  display:grid;
-  grid-template-columns:290px minmax(0,1fr);
-  gap:22px;
-  min-height:100vh;
-  padding:62px 22px 22px;
+  height:100vh;
+  padding:62px 22px 104px;
 }
 
 .sidebar,
@@ -387,11 +384,14 @@ input:focus,select:focus{
 
 .content{
   min-width:0;
+  max-width:1560px;
+  height:100%;
+  margin:0 auto;
   display:flex;
   flex-direction:column;
   gap:20px;
   overflow:auto;
-  padding-right:4px;
+  padding:0 4px 4px;
 }
 .topbar{
   display:flex;
@@ -399,6 +399,11 @@ input:focus,select:focus{
   justify-content:space-between;
   gap:16px;
   padding:6px 4px 0;
+  position:sticky;
+  top:0;
+  z-index:5;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 92%,transparent),rgba(0,0,0,0));
+  backdrop-filter:blur(8px);
 }
 .topbar h1{
   margin:6px 0 0;
@@ -425,6 +430,104 @@ input:focus,select:focus{
   display:flex;
   gap:10px;
   flex-wrap:wrap;
+}
+.profileChip{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 12px 8px 8px;
+  font-weight:700;
+}
+.profileAvatar.small{
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  font-size:11px;
+}
+.bottomDock{
+  position:fixed;
+  left:50%;
+  bottom:20px;
+  transform:translateX(-50%);
+  z-index:25;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:9px;
+  background:linear-gradient(180deg,rgba(20,22,31,.92),rgba(10,12,18,.94));
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:999px;
+  box-shadow:0 18px 60px rgba(0,0,0,.45),0 0 0 1px color-mix(in srgb,var(--accent) 10%,transparent);
+  backdrop-filter:blur(24px) saturate(1.15);
+}
+.bottomDock button{
+  position:relative;
+  width:48px;
+  height:48px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  border:1px solid transparent;
+  background:rgba(255,255,255,.05);
+  color:var(--muted);
+  cursor:pointer;
+  transition:.18s ease;
+}
+.bottomDock button span{
+  font-size:20px;
+  line-height:1;
+}
+.bottomDock button b{
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 12px);
+  transform:translate(-50%,6px) scale(.96);
+  opacity:0;
+  pointer-events:none;
+  white-space:nowrap;
+  padding:7px 10px;
+  border-radius:10px;
+  background:rgba(17,19,28,.96);
+  border:1px solid rgba(255,255,255,.14);
+  color:var(--text);
+  font-size:10px;
+  letter-spacing:.04em;
+  box-shadow:0 10px 35px rgba(0,0,0,.4);
+  transition:.16s ease;
+}
+.bottomDock button b:after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:100%;
+  width:7px;
+  height:7px;
+  background:rgba(17,19,28,.96);
+  border-right:1px solid rgba(255,255,255,.14);
+  border-bottom:1px solid rgba(255,255,255,.14);
+  transform:translate(-50%,-4px) rotate(45deg);
+}
+.bottomDock button:hover{
+  transform:translateY(-3px);
+  color:#fff;
+  background:rgba(255,255,255,.09);
+  border-color:rgba(255,255,255,.14);
+}
+.bottomDock button:hover b{
+  opacity:1;
+  transform:translate(-50%,0) scale(1);
+}
+.bottomDock button.active{
+  color:#1f1218;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 88%,white),var(--accent));
+  box-shadow:0 10px 24px color-mix(in srgb,var(--accent) 28%,transparent);
+}
+.bottomDock button.active:hover{transform:translateY(-3px)}
+.bottomDock .dockDivider{
+  width:1px;
+  height:30px;
+  background:rgba(255,255,255,.12);
+  margin:0 2px;
 }
 
 .sectionCard{
@@ -1574,8 +1677,7 @@ code{
 }
 
 @media (max-width:1080px){
-  .shell{grid-template-columns:1fr;padding:56px 16px 16px}
-  .sidebar{min-height:auto}
+  .shell{padding:56px 16px 96px}
   .heroCard,.statGrid,.buildGrid,.modGrid,.versionGrid,.panelGrid,.settingsGrid,.actionGrid,.actionGrid.compact,.onboardChoiceGrid,.onboardChoiceGrid.compactGrid{grid-template-columns:1fr}
   .topbar{flex-direction:column}
   .heroCopy h2{font-size:38px}
@@ -1583,6 +1685,7 @@ code{
 
 @media (max-width:760px){
   .titlebarBrand{display:none}
+  .shell{padding-bottom:88px}
   .topbar h1{font-size:28px}
   .heroCopy,
   .sectionCard,
@@ -1597,4 +1700,9 @@ code{
   .filterRow.compact{justify-content:flex-start}
   .heroFeatureRow,.authRail,.accountActions,.msPreviewRow{flex-direction:column;align-items:stretch}
   .accountRow{grid-template-columns:1fr}
+  .bottomDock{bottom:12px;padding:8px;gap:6px}
+  .bottomDock button{width:44px;height:44px}
+  .bottomDock button span{font-size:18px}
+  .bottomDock button b{display:none}
+  .profileChip{width:100%;justify-content:center}
 }
