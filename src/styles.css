@@ -21,9 +21,12 @@
   --radius-sm:12px;
   --radius-pill:999px;
   --accent:#f4a0bd;
+  --accent-rgb:244, 160, 189;
+  --accent-light-rgb:247, 197, 213;
   --accent-2:#8ea6ff;
+  --accent-2-rgb:142, 166, 255;
   --card-sheen:linear-gradient(120deg,rgba(255,255,255,.09),rgba(255,255,255,0) 40%);
-  --border-glow:linear-gradient(135deg,color-mix(in srgb,var(--accent) 55%,transparent),rgba(255,255,255,0) 38%,color-mix(in srgb,var(--accent-2) 40%,transparent));
+  --border-glow:linear-gradient(135deg,rgba(var(--accent-rgb), 0.55),rgba(255,255,255,0) 38%,rgba(var(--accent-2-rgb), 0.40));
 }
 
 *{box-sizing:border-box}
@@ -34,8 +37,8 @@ body{
   color:var(--text);
   background:
     radial-gradient(circle at top left,rgba(255,255,255,.06),transparent 30%),
-    radial-gradient(circle at 85% 15%,color-mix(in srgb,var(--accent) 18%,transparent),transparent 25%),
-    radial-gradient(circle at 20% 85%,color-mix(in srgb,var(--accent-2) 12%,transparent),transparent 30%),
+    radial-gradient(circle at 85% 15%,rgba(var(--accent-rgb), 0.18),transparent 25%),
+    radial-gradient(circle at 20% 85%,rgba(var(--accent-2-rgb), 0.12),transparent 30%),
     linear-gradient(180deg,#121421 0%,#08090d 100%);
   overflow:hidden;
 }
@@ -64,8 +67,8 @@ input,select{
   padding:13px 14px;
 }
 input:focus,select:focus{
-  border-color:color-mix(in srgb,var(--accent) 48%,transparent);
-  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent);
+  border-color:rgba(var(--accent-rgb), 0.48);
+  box-shadow:0 0 0 3px rgba(var(--accent-rgb), 0.14);
 }
 
 .app{
@@ -155,7 +158,7 @@ input:focus,select:focus{
   position:absolute;
   left:0;right:0;bottom:-1px;
   height:1px;
-  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 45%,transparent),transparent);
+  background:linear-gradient(90deg,transparent,rgba(var(--accent-rgb), 0.45),transparent);
   opacity:.7;
 }
 .titlebarBrand{
@@ -191,7 +194,7 @@ input:focus,select:focus{
   height:280px;
   top:60px;
   right:8%;
-  background:color-mix(in srgb,var(--accent) 42%,transparent);
+  background:rgba(var(--accent-rgb), 0.42);
 }
 .glowB{
   width:220px;
@@ -215,7 +218,7 @@ input:focus,select:focus{
   width:var(--s);
   height:calc(var(--s) * .62);
   border-radius:70% 30% 70% 30%;
-  background:color-mix(in srgb,var(--accent) 88%,white);
+  background:rgb(var(--accent-light-rgb));
   opacity:var(--particle-opacity);
   animation:petalFall var(--d) linear infinite;
   animation-delay:var(--delay);
@@ -292,7 +295,7 @@ input:focus,select:focus{
   height:52px;
   border-radius:16px;
   image-rendering:pixelated;
-  box-shadow:0 12px 28px color-mix(in srgb,var(--accent) 20%,transparent);
+  box-shadow:0 12px 28px rgba(var(--accent-rgb), 0.20);
 }
 .brandCopy strong{
   display:block;
@@ -324,7 +327,7 @@ input:focus,select:focus{
   display:grid;
   place-items:center;
   border-radius:14px;
-  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 28%,transparent),rgba(255,255,255,.08));
+  background:linear-gradient(135deg,rgba(var(--accent-rgb), 0.28),rgba(255,255,255,.08));
   color:#fff;
   font-weight:800;
 }
@@ -365,8 +368,8 @@ input:focus,select:focus{
 }
 .sidebarNav button.active{
   color:#fff;
-  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,transparent),rgba(255,255,255,.06));
-  border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);
+  background:linear-gradient(135deg,rgba(var(--accent-rgb), 0.18),rgba(255,255,255,.06));
+  border:1px solid rgba(var(--accent-rgb), 0.26);
 }
 .sidebarSection{
   margin-top:auto;
@@ -406,7 +409,7 @@ input:focus,select:focus{
   text-align:left;
 }
 .sidebarAction.accent{
-  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 85%,white),var(--accent));
+  background:linear-gradient(135deg,rgb(var(--accent-light-rgb)),var(--accent));
   color:#1a1015;
   font-weight:700;
 }
@@ -444,7 +447,7 @@ input:focus,select:focus{
   position:sticky;
   top:0;
   z-index:5;
-  background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 92%,transparent),rgba(0,0,0,0));
+  background:linear-gradient(180deg,rgba(9,10,15,.92),rgba(0,0,0,0));
   backdrop-filter:blur(8px);
 }
 .topbar h1{
@@ -459,7 +462,7 @@ input:focus,select:focus{
   font-weight:700;
   text-transform:uppercase;
   letter-spacing:.18em;
-  color:color-mix(in srgb,var(--accent) 70%,white);
+  color:rgb(var(--accent-light-rgb));
 }
 .topbarActions,
 .heroActions,
@@ -499,7 +502,7 @@ input:focus,select:focus{
   background:linear-gradient(180deg,rgba(20,22,31,.92),rgba(10,12,18,.94));
   border:1px solid rgba(255,255,255,.12);
   border-radius:999px;
-  box-shadow:0 18px 60px rgba(0,0,0,.45),0 0 0 1px color-mix(in srgb,var(--accent) 10%,transparent);
+  box-shadow:0 18px 60px rgba(0,0,0,.45),0 0 0 1px rgba(var(--accent-rgb), 0.10);
   backdrop-filter:blur(24px) saturate(1.15);
 }
 .bottomDock button{
@@ -561,16 +564,16 @@ input:focus,select:focus{
 }
 .bottomDock button.active{
   color:#1f1218;
-  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 88%,white),var(--accent));
-  box-shadow:0 10px 24px color-mix(in srgb,var(--accent) 28%,transparent);
+  background:linear-gradient(135deg,rgb(var(--accent-light-rgb)),var(--accent));
+  box-shadow:0 10px 24px rgba(var(--accent-rgb), 0.28);
   animation:dockActivePulse 2.4s ease-in-out infinite;
 }
 .bottomDock button:active{
   transform:scale(.9);
 }
 @keyframes dockActivePulse{
-  0%,100%{box-shadow:0 10px 24px color-mix(in srgb,var(--accent) 28%,transparent)}
-  50%{box-shadow:0 10px 32px color-mix(in srgb,var(--accent) 46%,transparent)}
+  0%,100%{box-shadow:0 10px 24px rgba(var(--accent-rgb), 0.28)}
+  50%{box-shadow:0 10px 32px rgba(var(--accent-rgb), 0.46)}
 }
 .bottomDock button.active:hover{transform:translateY(-3px)}
 .bottomDock .dockDivider{
@@ -627,7 +630,7 @@ input:focus,select:focus{
   position:absolute;
   top:-60%;right:-30%;
   width:60%;height:220%;
-  background:radial-gradient(circle,color-mix(in srgb,var(--accent) 20%,transparent),transparent 65%);
+  background:radial-gradient(circle,rgba(var(--accent-rgb), 0.20),transparent 65%);
   pointer-events:none;
 }
 .heroCopy h2{
@@ -680,7 +683,7 @@ input:focus,select:focus{
   right:8%;
   top:-40px;
   border-radius:50%;
-  background:color-mix(in srgb,var(--accent) 24%,transparent);
+  background:rgba(var(--accent-rgb), 0.24);
   filter:blur(50px);
 }
 .sceneMoon{
@@ -928,7 +931,7 @@ input:focus,select:focus{
 }
 .statCard:hover{
   transform:translateY(-2px);
-  border-color:color-mix(in srgb,var(--accent) 24%,rgba(255,255,255,.12));
+  border-color:rgba(var(--accent-rgb), 0.32);
 }
 .statCard span{
   display:block;
@@ -943,7 +946,7 @@ input:focus,select:focus{
   font-size:38px;
   line-height:1;
   letter-spacing:-.05em;
-  background:linear-gradient(135deg,var(--text),color-mix(in srgb,var(--accent) 65%,var(--text)));
+  background:linear-gradient(135deg,var(--text),rgb(var(--accent-light-rgb)));
   -webkit-background-clip:text;
   background-clip:text;
   -webkit-text-fill-color:transparent;
@@ -981,12 +984,12 @@ input:focus,select:focus{
 .versionCard:hover,
 .modCard:hover{
   transform:translateY(-3px);
-  border-color:color-mix(in srgb,var(--accent) 25%,rgba(255,255,255,.14));
+  border-color:rgba(var(--accent-rgb), 0.33);
 }
 .glow-on .actionTile:hover,
 .glow-on .buildCard:hover,
 .glow-on .presetCard:hover{
-  box-shadow:0 18px 42px color-mix(in srgb,var(--accent) 14%,transparent);
+  box-shadow:0 18px 42px rgba(var(--accent-rgb), 0.14);
 }
 
 .buildGrid,
@@ -1018,8 +1021,8 @@ input:focus,select:focus{
   cursor:pointer;
 }
 .buildCard.selected{
-  border-color:color-mix(in srgb,var(--accent) 34%,transparent);
-  box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent);
+  border-color:rgba(var(--accent-rgb), 0.34);
+  box-shadow:0 0 0 1px rgba(var(--accent-rgb), 0.18);
 }
 .buildCardTop{
   display:flex;
@@ -1121,7 +1124,7 @@ input:focus,select:focus{
 }
 .filterRow button.active{
   color:#1a0f15;
-  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 88%,white),var(--accent));
+  background:linear-gradient(135deg,rgb(var(--accent-light-rgb)),var(--accent));
   border-color:transparent;
 }
 
@@ -1309,7 +1312,7 @@ code{
 .progressBar{
   height:100%;
   border-radius:inherit;
-  background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 84%,white),var(--accent));
+  background:linear-gradient(90deg,rgb(var(--accent-light-rgb)),var(--accent));
 }
 .progressInfo{
   display:flex;
@@ -1346,8 +1349,8 @@ code{
 }
 .themeChoices button.chosen,
 .profileList button.chosen{
-  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,transparent),rgba(255,255,255,.08));
-  border-color:color-mix(in srgb,var(--accent) 35%,transparent);
+  background:linear-gradient(135deg,rgba(var(--accent-rgb), 0.16),rgba(255,255,255,.08));
+  border-color:rgba(var(--accent-rgb), 0.35);
 }
 .presetCard{
   display:block;
@@ -1367,7 +1370,7 @@ code{
 }
 .presetCard:hover{
   transform:translateY(-2px);
-  border-color:color-mix(in srgb,var(--accent) 24%,rgba(255,255,255,.14));
+  border-color:rgba(var(--accent-rgb), 0.32);
 }
 .authRail{
   display:flex;
@@ -1384,8 +1387,8 @@ code{
   cursor:pointer;
 }
 .authRail button.chosen{
-  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,transparent),rgba(255,255,255,.08));
-  border-color:color-mix(in srgb,var(--accent) 35%,transparent);
+  background:linear-gradient(135deg,rgba(var(--accent-rgb), 0.16),rgba(255,255,255,.08));
+  border-color:rgba(var(--accent-rgb), 0.35);
 }
 .authRail button:disabled{opacity:.55;cursor:not-allowed}
 .accountsModal h2{margin-top:6px}
@@ -1405,8 +1408,8 @@ code{
   animation:fadeUp .35s ease both;
 }
 .accountRow.active{
-  border-color:color-mix(in srgb,var(--accent) 30%,transparent);
-  box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent);
+  border-color:rgba(var(--accent-rgb), 0.30);
+  box-shadow:0 0 0 1px rgba(var(--accent-rgb), 0.18);
 }
 .accountMeta strong{display:block}
 .accountMeta span{display:block;color:var(--muted);margin-top:4px}
@@ -1478,7 +1481,7 @@ code{
   transition:.18s ease;
 }
 .toggle.on i{
-  background:color-mix(in srgb,var(--accent) 45%,rgba(255,255,255,.14));
+  background:rgba(var(--accent-rgb), 0.53);
 }
 .toggle.on i:after{
   left:21px;
@@ -1494,7 +1497,7 @@ code{
   margin-bottom:8px;
   font-size:13px;
 }
-.range em{font-style:normal;color:color-mix(in srgb,var(--accent) 80%,white)}
+.range em{font-style:normal;color:rgb(var(--accent-light-rgb))}
 .range input{padding:0;accent-color:var(--accent)}
 .twoCols{
   display:grid;
@@ -1529,8 +1532,8 @@ code{
 .primaryButton:hover:before{transform:translateX(120%)}
 .primaryButton{
   color:#1a0f15;
-  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 88%,white),var(--accent) 60%,color-mix(in srgb,var(--accent-2) 45%,var(--accent)));
-  box-shadow:0 14px 32px color-mix(in srgb,var(--accent) 26%,transparent),0 2px 0 rgba(255,255,255,.35) inset;
+  background:linear-gradient(135deg,rgb(var(--accent-light-rgb)),var(--accent) 60%,rgb(var(--accent-2-rgb)));
+  box-shadow:0 14px 32px rgba(var(--accent-rgb), 0.26),0 2px 0 rgba(255,255,255,.35) inset;
 }
 .secondaryButton{
   color:var(--text);
@@ -1539,7 +1542,7 @@ code{
   box-shadow:0 1px 0 rgba(255,255,255,.05) inset;
 }
 .secondaryButton:hover{
-  border-color:color-mix(in srgb,var(--accent) 30%,rgba(255,255,255,.16));
+  border-color:rgba(var(--accent-rgb), 0.38);
   background:rgba(255,255,255,.07);
 }
 .primaryButton.small,
@@ -1567,8 +1570,8 @@ code{
   background:rgba(255,255,255,.04);
 }
 .iconButton.favorite{
-  color:color-mix(in srgb,var(--accent) 82%,white);
-  border-color:color-mix(in srgb,var(--accent) 24%,rgba(255,255,255,.08));
+  color:rgb(var(--accent-light-rgb));
+  border-color:rgba(var(--accent-rgb), 0.32);
 }
 .chipButton{
   padding:11px 14px;
@@ -1582,7 +1585,7 @@ code{
   background:none;
   color:var(--muted-strong);
 }
-.textButton.accentText{color:color-mix(in srgb,var(--accent) 78%,white)}
+.textButton.accentText{color:rgb(var(--accent-light-rgb))}
 .modalFooter{
   margin-top:18px;
   justify-content:flex-end;
@@ -1597,7 +1600,7 @@ code{
 .hintBanner button{
   margin-left:6px;
   background:none;
-  color:color-mix(in srgb,var(--accent) 82%,white);
+  color:rgb(var(--accent-light-rgb));
   cursor:pointer;
   padding:0;
 }
@@ -1625,8 +1628,8 @@ code{
   padding:20px;
   overflow:hidden;
   background:
-    radial-gradient(circle at 50% 20%,color-mix(in srgb,var(--accent) 20%,transparent),transparent 30%),
-    radial-gradient(circle at 85% 80%,color-mix(in srgb,var(--accent-2) 14%,transparent),transparent 32%),
+    radial-gradient(circle at 50% 20%,rgba(var(--accent-rgb), 0.20),transparent 30%),
+    radial-gradient(circle at 85% 80%,rgba(var(--accent-2-rgb), 0.14),transparent 32%),
     linear-gradient(180deg,#13131f 0%,#090a0f 100%);
 }
 .onboardPetals{
@@ -1643,7 +1646,7 @@ code{
   width:var(--s);
   height:calc(var(--s) * .62);
   border-radius:70% 30% 70% 30%;
-  background:color-mix(in srgb,var(--accent) 88%,white);
+  background:rgb(var(--accent-light-rgb));
   opacity:.22;
   animation:petalFall var(--d) linear infinite;
   animation-delay:var(--delay);
@@ -1669,7 +1672,7 @@ code{
   position:absolute;
   inset:0;
   border-radius:inherit;
-  background:radial-gradient(circle at var(--glowX) var(--glowY),color-mix(in srgb,var(--accent) 24%,transparent),transparent 55%);
+  background:radial-gradient(circle at var(--glowX) var(--glowY),rgba(var(--accent-rgb), 0.24),transparent 55%);
   opacity:.9;
   pointer-events:none;
   z-index:-1;
@@ -1716,9 +1719,9 @@ code{
 .onboardStepper .stepDot.active i,
 .onboardStepper .stepDot.done i{
   color:#1a0f15;
-  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 88%,white),var(--accent));
+  background:linear-gradient(135deg,rgb(var(--accent-light-rgb)),var(--accent));
   border-color:transparent;
-  box-shadow:0 0 16px color-mix(in srgb,var(--accent) 45%,transparent);
+  box-shadow:0 0 16px rgba(var(--accent-rgb), 0.45);
 }
 .onboardStepper .stepDot.active span{display:inline;color:var(--text)}
 .onboardStepper .stepLine{
@@ -1757,9 +1760,9 @@ code{
 }
 .onboardChoice:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.16)}
 .onboardChoice.chosen{
-  border-color:color-mix(in srgb,var(--accent) 40%,transparent);
-  box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 22%,transparent),0 12px 30px color-mix(in srgb,var(--accent) 16%,transparent);
-  background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 14%,rgba(255,255,255,.04)),rgba(255,255,255,.03));
+  border-color:rgba(var(--accent-rgb), 0.40);
+  box-shadow:0 0 0 1px rgba(var(--accent-rgb), 0.22),0 12px 30px rgba(var(--accent-rgb), 0.16);
+  background:linear-gradient(160deg,rgba(var(--accent-rgb), 0.22),rgba(255,255,255,.03));
 }
 .onboardChoice.chosen:after{
   content:"✓";
@@ -1809,7 +1812,7 @@ code{
   font-size:12px;
   color:var(--muted);
 }
-.nameHint b{color:color-mix(in srgb,var(--accent) 78%,white);font-weight:700}
+.nameHint b{color:rgb(var(--accent-light-rgb));font-weight:700}
 .burstBloom{
   position:absolute;
   inset:0;
@@ -1822,7 +1825,7 @@ code{
   position:absolute;
   width:10px;height:14px;
   border-radius:70% 30% 70% 30%;
-  background:color-mix(in srgb,var(--accent) 85%,white);
+  background:rgb(var(--accent-light-rgb));
   opacity:0;
   animation:burstFly .62s ease-out forwards;
   animation-delay:var(--delay);
@@ -1870,8 +1873,8 @@ code{
   display:grid;
   place-items:center;
   border-radius:20px;
-  background:color-mix(in srgb,var(--accent) 14%,transparent);
-  color:color-mix(in srgb,var(--accent) 88%,white);
+  background:rgba(var(--accent-rgb), 0.14);
+  color:rgb(var(--accent-light-rgb));
   font-size:28px;
 }
 .emptyState h3{margin:6px 0 0;font-size:24px}
