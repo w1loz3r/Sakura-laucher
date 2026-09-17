@@ -804,12 +804,60 @@ function App(){
  </div>;
 }
 
+const onboardStepLabels=['Атмосфера','Сцена','Профиль'];
+const onboardPetalSeeds=Array.from({length:14},(_,index)=>({
+ x:(index*37+9)%100,
+ s:10+((index*13)%16),
+ d:9+((index*7)%10),
+ delay:-(index*1.3),
+ r:(index*47)%360
+}));
+const facePattern=['HHHHHHH','HSSSSSH','HSESESH','HSSSSSH','HSSMMSH','HSSSSSH','HHHHHHH'];
+function hashSeed(str){
+ let h=0;
+ for(let i=0;i<str.length;i++)h=(h*31+str.charCodeAt(i))>>>0;
+ return h;
+}
+function PixelAvatar({name}){
+ if(!name)return <div className="pixelAvatar empty"><span>?</span></div>;
+ const seed=hashSeed(name);
+ const hueSkin=seed%360;
+ const hueHair=(hueSkin+140+(seed%41))%360;
+ const skin=`hsl(${hueSkin} 55% 68%)`;
+ const hair=`hsl(${hueHair} 55% 42%)`;
+ const mouth=`hsl(${hueSkin} 45% 48%)`;
+ const colorFor=(cell)=>cell==='H'?hair:cell==='S'?skin:cell==='E'?'#2b2b2b':cell==='M'?mouth:'transparent';
+ return <div className="pixelAvatar" style={{boxShadow:`0 14px 32px hsl(${hueSkin} 55% 55% / .38)`}}>
+  {facePattern.map((row,ri)=>row.split('').map((cell,ci)=><i key={`${ri}-${ci}`} style={{background:colorFor(cell)}}/>))}
+ </div>;
+}
+
 function Onboarding({onDone,settings,setSettings}){
  const [step,setStep]=useState(0);
  const [name,setName]=useState('');
  const [selectedTheme,setSelectedTheme]=useState(settings.theme);
  const [selectedScene,setSelectedScene]=useState(settings.scene==='auto'?(themeSceneMap[settings.theme]||'sakura-dusk'):settings.scene);
  const [selectedDensity,setSelectedDensity]=useState(settings.density);
+ const [leaving,setLeaving]=useState(false);
+ const cardRef=useRef(null);
+ const cleanName=name.trim();
+ function handleTilt(event){
+  const card=cardRef.current;
+  if(!card)return;
+  const rect=card.getBoundingClientRect();
+  const px=(event.clientX-rect.left)/rect.width;
+  const py=(event.clientY-rect.top)/rect.height;
+  card.style.setProperty('--tiltX',`${((0.5-py)*8).toFixed(2)}deg`);
+  card.style.setProperty('--tiltY',`${((px-0.5)*8).toFixed(2)}deg`);
+  card.style.setProperty('--glowX',`${(px*100).toFixed(1)}%`);
+  card.style.setProperty('--glowY',`${(py*100).toFixed(1)}%`);
+ }
+ function resetTilt(){
+  const card=cardRef.current;
+  if(!card)return;
+  card.style.setProperty('--tiltX','0deg');
+  card.style.setProperty('--tiltY','0deg');
+ }
  function finish(){
   setSettings((current)=>({
    ...current,
@@ -819,12 +867,31 @@ function Onboarding({onDone,settings,setSettings}){
   }));
   onDone({name});
  }
- return <div className="onboarding">
-  <div className="onboardCard onboardWide">
+ function handleEnter(){
+  if(cleanName.length<3||leaving)return;
+  setLeaving(true);
+  setTimeout(finish,520);
+ }
+ return <div className="onboarding" style={{'--accent':settings.accent}}>
+  <div className="onboardPetals" aria-hidden="true">
+   {onboardPetalSeeds.map((petal,index)=><i key={index} style={{'--x':`${petal.x}%`,'--s':`${petal.s}px`,'--d':`${petal.d}s`,'--delay':`${petal.delay}s`,'--r':`${petal.r}deg`}}/>)}
+  </div>
+  <div ref={cardRef} onMouseMove={handleTilt} onMouseLeave={resetTilt} className={`onboardCard onboardWide ${leaving?'leaving':''}`}>
+   {leaving&&<div className="burstBloom" aria-hidden="true">
+    {Array.from({length:18}).map((_,index)=><i key={index} style={{'--ang':`${index*20}deg`,'--dist':`${64+((index*13)%70)}px`,'--delay':`${(index%6)*0.03}s`}}/>)}
+   </div>}
    <img src={logo} alt="Sakura"/>
    <span className="eyebrow">SAKURA LAUNCHER</span>
-   <div className="onboardProgress">{[0,1,2].map((item)=><i key={item} className={step===item?'active':''}/>)}</div>
-   {step===0&&<>
+   <div className="onboardStepper">
+    {onboardStepLabels.map((label,index)=><React.Fragment key={label}>
+     {index>0&&<span className={`stepLine ${step>=index?'filled':''}`}><i/></span>}
+     <span className={`stepDot ${step===index?'active':step>index?'done':''}`}>
+      <i>{step>index?'✓':index+1}</i>
+      <span>{label}</span>
+     </span>
+    </React.Fragment>)}
+   </div>
+   {step===0&&<div className="onboardStepBody" key="step-0">
     <h1>Настрой атмосферу</h1>
     <p>Выбери настроение интерфейса, чтобы Sakura сразу выглядела как твой собственный лаунчер.</p>
     <div className="onboardChoiceGrid">
@@ -833,8 +900,8 @@ function Onboarding({onDone,settings,setSettings}){
       <span>{description}</span>
      </button>)}
     </div>
-   </>}
-   {step===1&&<>
+   </div>}
+   {step===1&&<div className="onboardStepBody" key="step-1">
     <h1>Выбери сцену и плотность</h1>
     <p>Фон главного экрана и плотность интерфейса можно менять когда угодно в настройках.</p>
     <div className="onboardChoiceGrid compactGrid">
@@ -846,21 +913,30 @@ function Onboarding({onDone,settings,setSettings}){
     <div className="themeChoices centeredChoices">
      {[['compact','Compact'],['cozy','Cozy'],['spacious','Spacious']].map(([id,label])=><button key={id} className={selectedDensity===id?'chosen':''} onClick={()=>setSelectedDensity(id)}>{label}</button>)}
     </div>
-   </>}
-   {step===2&&<>
+   </div>}
+   {step===2&&<div className="onboardStepBody" key="step-2">
     <h1>Создай профиль</h1>
     <p>Пока вход локальный, но интерфейс уже подготовлен под будущую Microsoft-авторизацию.</p>
-    <input autoFocus value={name} onChange={(event)=>setName(event.target.value.replace(/[^A-Za-z0-9_]/g,'').slice(0,16))} placeholder="Твой ник"/>
+    <PixelAvatar name={cleanName}/>
+    <div className="nameField">
+     <input autoFocus value={name} onChange={(event)=>setName(event.target.value.replace(/[^A-Za-z0-9_]/g,'').slice(0,16))} placeholder="Твой ник" onKeyDown={(event)=>{if(event.key==='Enter')handleEnter();}}/>
+     <div className="nameHint">
+      {cleanName.length<3
+       ?<span>Минимум 3 символа · буквы, цифры и «_»</span>
+       :<span>Отлично, <b>{cleanName}</b> — так и запишем</span>}
+      <span>· {name.length}/16</span>
+     </div>
+    </div>
     <div className="authPreviewCard">
      <strong>Microsoft sign-in</strong>
      <span>Soon: нормальный аккаунт для online-mode серверов, скин-синхронизация и управление профилями.</span>
     </div>
-   </>}
+   </div>}
    <div className="modalFooter spreadFooter">
-    <button className="secondaryButton" disabled={!step} onClick={()=>setStep((value)=>Math.max(0,value-1))}>Назад</button>
+    <button className="secondaryButton" disabled={!step||leaving} onClick={()=>setStep((value)=>Math.max(0,value-1))}>Назад</button>
     {step<2
-     ?<button className="primaryButton" onClick={()=>setStep((value)=>Math.min(2,value+1))}>Дальше</button>
-     :<button className="primaryButton" disabled={name.length<3} onClick={finish}>Войти в Sakura</button>}
+     ?<button className="primaryButton" disabled={leaving} onClick={()=>setStep((value)=>Math.min(2,value+1))}>Дальше</button>
+     :<button className="primaryButton" disabled={cleanName.length<3||leaving} onClick={handleEnter}>🌸 Войти в Sakura</button>}
    </div>
    <small>Локальный профиль не заменяет Microsoft-авторизацию для официальных online-mode серверов.</small>
   </div>
