@@ -81,6 +81,32 @@ const visualPresets=[
 
 const normalizeAccount=(account)=>typeof account==='string'?{id:account,name:account,type:'local'}:{id:account.id||account.name,name:account.name,type:account.type||'local'};
 
+const themeAccentMap={
+ sakura:'#f4a0bd',
+ midnight:'#7fb6ff',
+ rose:'#ff9fc7',
+ aurora:'#69e6d1',
+ ember:'#ffb074'
+};
+function hexToChannels(hex){
+ const clean=String(hex||'').replace('#','').trim();
+ const full=clean.length===3?clean.split('').map((char)=>char+char).join(''):clean.padEnd(6,'0').slice(0,6);
+ const int=parseInt(full,16);
+ return Number.isNaN(int)?[244,160,189]:[(int>>16)&255,(int>>8)&255,int&255];
+}
+function mixChannels(base,target,ratio){
+ return base.map((value,index)=>Math.round(value+(target[index]-value)*ratio));
+}
+function accentCssVars(hex){
+ const rgb=hexToChannels(hex);
+ const light=mixChannels(rgb,[255,255,255],.16);
+ return {
+  '--accent':hex,
+  '--accent-rgb':rgb.join(', '),
+  '--accent-light-rgb':light.join(', ')
+ };
+}
+
 class LauncherErrorBoundary extends React.Component{
  constructor(props){
   super(props);
@@ -658,7 +684,7 @@ function App(){
 
  return <div
   className={`app theme-${settings.theme} density-${settings.density} ${settings.glow?'glow-on':''} ${settings.animations?'animations-on':'animations-off'}`}
-  style={{'--accent':settings.accent,'--particle-opacity':settings.particleOpacity}}
+  style={{...accentCssVars(settings.accent),'--particle-opacity':settings.particleOpacity}}
  >
   <div className="titlebar" data-tauri-drag-region>
    <div className="titlebarBrand" data-tauri-drag-region>SAKURA LAUNCHER</div>
@@ -841,6 +867,7 @@ function Onboarding({onDone,settings,setSettings}){
  const [leaving,setLeaving]=useState(false);
  const cardRef=useRef(null);
  const cleanName=name.trim();
+ const previewAccent=themeAccentMap[selectedTheme]||settings.accent;
  function handleTilt(event){
   const card=cardRef.current;
   if(!card)return;
